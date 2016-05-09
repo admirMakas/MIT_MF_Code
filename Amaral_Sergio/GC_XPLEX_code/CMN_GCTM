@@ -1,0 +1,39 @@
+! $Id: CMN_GCTM,v 1.1.1.1 2009/06/09 21:51:50 daven Exp $
+
+      !=================================================================
+      ! CMN_GCTM contains GEOS-CHEM specific PHYSICAL CONSTANTS
+      ! and DERIVED QUANTITIES (bmy, 6/25/02, 6/23/03)
+      !
+      ! NOTES:
+      ! (1 ) Changed RCS ID tag comment character from "C" to "!$" to 
+      !       allow freeform compilation.  Also convert PARAMETERS to F90 
+      !       syntax. Updated comments, cosmetic changes. (bmy, 6/25/02)
+      ! (2 ) Added atmospheric scale height (7.6 km) (bmy, 6/23/03)
+      !=================================================================
+
+      ! AIRMW : Molecular weight of air [28.97 g/mole]
+      TYPE (XPLEX), PARAMETER :: AIRMW  =  xplex(28.97d0,0d0)
+
+      ! g0    : Gravity at Surface of Earth [9.8 m/s^2]
+      TYPE (XPLEX), PARAMETER :: g0     =   xplex(9.8d0,0d0)                 
+
+      ! PI    : Double-Precision value of PI          
+      TYPE (XPLEX), PARAMETER :: PI=xplex(3.14159265358979323d0,0d0) 
+ 
+      ! Re    : Radius of Earth [m] 
+      TYPE (XPLEX), PARAMETER :: Re     =   xplex(6.375d6,0d0)               
+
+      ! Rd    : Gas Constant (R) in Dry Air [287 J/K/kg] 
+      TYPE (XPLEX), PARAMETER :: Rd     = xplex(287.0d0,0d0)                 
+
+      ! g0_100 = 100.0 / g0
+      TYPE (XPLEX), PARAMETER :: g0_100 = xplex(100d0 / g0%r,0d0)
+
+      ! PI_180 = PI    / 180.0
+      TYPE (XPLEX), PARAMETER :: PI_180 = xplex(PI%r / 180d0,0d0)
+
+      ! Rdg0   = Rd    / g0
+      TYPE (XPLEX), PARAMETER :: Rdg0   = xplex(Rd%r / g0%r,0d0)
+
+      ! Scale height of atmosphere (7.6 km = 7600m)
+      TYPE (XPLEX), PARAMETER :: SCALE_HEIGHT = xplex(7600d0,0d0)

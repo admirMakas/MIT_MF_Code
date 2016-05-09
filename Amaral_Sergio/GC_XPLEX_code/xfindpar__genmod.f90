@@ -1,0 +1,10 @@
+        !COMPILER-GENERATED INTERFACE MODULE: Mon Mar 26 14:19:48 2012
+        MODULE XFINDPAR__genmod
+          INTERFACE 
+            FUNCTION XFINDPAR(NUNIT,PARNAME)
+              INTEGER(KIND=4) :: NUNIT
+              CHARACTER(*) :: PARNAME
+              LOGICAL(KIND=4) :: XFINDPAR
+            END FUNCTION XFINDPAR
+          END INTERFACE 
+        END MODULE XFINDPAR__genmod

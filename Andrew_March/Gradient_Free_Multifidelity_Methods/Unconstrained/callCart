@@ -1,0 +1,13 @@
+# Attempt to run this script remotely
+echo "I'm Here-voyager"
+cd airfoil/
+rm -f finished.txt
+rm -rf adapt??
+rm -rf BEST/loadsCC.dat
+pwd
+# Do all of that Running of Cart3D stuff here...
+# edit the input.cntl file (M & Alpha)
+./aero.csh
+echo `date` >finished.txt
+exit
+

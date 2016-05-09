@@ -1,0 +1,1931 @@
+!******************************************************************************
+!	Written for 'complexify.py 1.3'
+!	J.R.R.A.Martins 1999
+!       21-Apr-00  Fixed tan, sinh, cosh
+!                  sign now returns complex
+!                  added log10 and nint
+!                  changed ==, /= and >= -- see comments below
+!       20-May-00  added cosd, sind, and epsilon
+!       11-Jul-00  took away cosd, sind (they are reserved, but not
+!                  intrinsic functions in F90)
+!       21-Jul-00  converted all trig functions to the value/derivative
+!                  formulas -- not general complex number formulas
+!       15-Aug-00  Fixed bug in atan2 formula and added the rest of the
+!                  _ci and _ic cominations to the relational operators.
+!                  P. Sturdza
+!                  
+!******************************************************************************
+!
+! Assume all code is compiled with double precision (-r8 compiler flag)
+!
+
+!TODO:
+!     more typ combinations: cc, cr, rc, ic ?
+!     check all fcns
+!
+
+module complexify
+
+  implicit none
+  
+! ABS
+  interface abs
+     module procedure abs_c
+     module procedure abs_cs
+  end interface
+
+! COSD
+!  interface cosd
+!     module procedure cosd_c
+!  end interface
+
+! ACOS
+  interface acos
+     module procedure acos_c
+!     module procedure acos_cs
+  end interface
+
+! SIND
+!  interface sind
+!     module procedure sind_c
+!  end interface
+
+! ASIN
+!  interface asin
+!     module procedure asin_c
+!     module procedure asin_cs
+!  end interface
+
+! ATAN
+  interface atan
+     module procedure atan_c
+!     module procedure atan_cs
+  end interface
+
+! ATAN2
+!  interface atan2
+!     module procedure atan2_cc
+!     module procedure atan2_ccs
+!  end interface
+
+! COSH
+!  interface cosh
+!     module procedure cosh_c
+!     module procedure cosh_cs
+!  end interface
+
+! MAX (limited to 2-4 complex args, 2 mixed args)
+  interface max
+     module procedure max_cc
+     module procedure max_cr
+     module procedure max_rc
+!     module procedure max_ii
+     module procedure max_ccc     ! added because of DFLUX.f
+!     module procedure max_cccc     ! added because of DFLUX.f
+     
+!     module procedure max_ccs
+     module procedure max_crs
+!     module procedure max_rcs
+!     module procedure max_cccs     ! added because of DFLUX.f
+!     module procedure max_ccccs     ! added because of DFLUX.f
+     module procedure max_csrd
+     module procedure max_cscd
+     module procedure max_cdcs
+  end interface
+
+! MIN (limited to 2-4 complex args, 2 mixed args)
+  interface min
+     module procedure min_cc
+     module procedure min_cr
+     module procedure min_rc
+     module procedure min_ccc
+     module procedure min_rcc
+!     module procedure min_cccc
+     
+!     module procedure min_ccs
+!     module procedure min_crs
+!     module procedure min_rcs
+!     module procedure min_cccs
+!     module procedure min_ccccs
+  end interface
+
+! SIGN
+  interface sign
+     module procedure sign_cc
+!     module procedure sign_cr
+     module procedure sign_rc
+     
+!     module procedure sign_ccs
+!     module procedure sign_crs
+!     module procedure sign_rcs
+  end interface
+
+! DIM
+!  interface dim
+!     module procedure dim_cc
+!     module procedure dim_cr
+!     module procedure dim_rc
+
+!     module procedure dim_ccs
+!     module procedure dim_crs
+!     module procedure dim_rcs
+!  end interface
+
+! SINH
+!  interface sinh
+!     module procedure sinh_c
+!     module procedure sinh_cs
+!  end interface
+  
+! TAN
+!  interface tan
+!     module procedure tan_c
+!     module procedure tan_cs
+!  end interface
+  
+! TANH
+!  interface tanh
+!     module procedure tanh_c
+!     module procedure tanh_cs
+!  end interface
+
+! LOG10
+!  interface log10
+!     module procedure log10_c
+!     module procedure log10_cs
+!  end interface
+
+! DLOG
+!  interface dlog
+!     module procedure dlog_c
+!     module procedure dlog_cs
+!     module procedure dlog_r
+!     module procedure dlog_rs
+!  end interface
+
+! DEXP
+!  interface dexp
+!     module procedure dexp_c
+!     module procedure dexp_cs
+!     module procedure dexp_r
+!     module procedure dexp_rs
+!  end interface
+
+!FLOOR
+  interface floor
+     module procedure floor_c
+     module procedure floor_cs
+  end interface
+
+!CEILINIG
+!  interface ceiling
+!     module procedure ceiling_c
+!     module procedure ceiling_cs
+!  end interface
+
+!MINVAL
+  interface minval
+     module procedure minval_c
+!     module procedure minval_cs
+     module procedure minval_2c
+     module procedure minval_2cs
+     module procedure minval_3c
+     module procedure minval_3cs
+     module procedure minval_4c
+!     module procedure minval_4cs
+  end interface
+
+!MAXVAL
+  interface maxval
+     module procedure maxval_c
+!     module procedure maxval_cs
+     module procedure maxval_2c
+     module procedure maxval_2cs
+     module procedure maxval_3c
+     module procedure maxval_3cs
+     module procedure maxval_4c
+!     module procedure maxval_4cs
+  end interface
+
+!TINY
+  interface tiny
+     module procedure tiny_c
+!     module procedure tiny_cs
+  end interface
+
+! NINT
+  interface nint
+     module procedure nint_c
+     module procedure nint_cs
+  end interface
+
+! EPSILON
+!  interface epsilon
+!     module procedure epsilon_c
+!  end interface
+
+! <
+  interface operator (<)
+     module procedure lt_cc
+     module procedure lt_cr
+!     module procedure lt_rc
+     module procedure lt_ci
+!     module procedure lt_ic
+
+     module procedure lt_ccs
+     module procedure lt_crs
+!     module procedure lt_rcs
+     module procedure lt_cis
+!     module procedure lt_ics
+     module procedure lt_csrd
+     module procedure lt_cdcs
+     module procedure lt_cscd
+     module procedure lt_cdrs
+  end interface
+
+! <=
+  interface operator (<=)
+     module procedure le_cc
+     module procedure le_cr
+!     module procedure le_rc
+     module procedure le_ci
+     module procedure le_ic
+
+!     module procedure le_ccs
+!     module procedure le_crs
+!     module procedure le_rcs
+!     module procedure le_cis
+!     module procedure le_ics
+!     module procedure le_cscd
+     module procedure le_cdcs
+     module procedure le_rscd
+     module procedure le_cdrs
+  end interface
+
+! >
+  interface operator (>)
+     module procedure gt_cc
+     module procedure gt_cr
+!     module procedure gt_rc
+     module procedure gt_ci
+     module procedure gt_ic
+!
+     module procedure gt_ccs
+     module procedure gt_crs
+!     module procedure gt_rcs
+     module procedure gt_cis
+!     module procedure gt_ics
+     module procedure gt_cdcs
+     module procedure gt_cscd
+     module procedure gt_cdrs
+  end interface
+
+!! MIPSpro Compilers: Version 7.30 won't take .ge. and .eq..
+!! But pgf90 on Linux doesn't complain, go figure.
+!! It looks like a strict interpretation of FORTRAN should
+!! not allow overloading of .eq. and .ne. since they already
+!! have a definition for type complex, so define new operators
+!! called .ceq., .cne. and, for MIPS, .cge.
+!!
+!! comment out (and uncomment) the appropriate versions for
+!! your compiler
+!!
+! >= 
+  interface operator (>=)
+     module procedure ge_cc
+     module procedure ge_cr
+!     module procedure ge_rc
+     module procedure ge_ci
+!     module procedure ge_ic
+!
+!     module procedure ge_ccs
+!     module procedure ge_crs
+!     module procedure ge_rcs
+!     module procedure ge_cis
+!     module procedure ge_ics
+     module procedure ge_cscd
+!     module procedure ge_cdcs
+     module procedure ge_cdrs
+     module procedure ge_csrd
+  end interface
+!! interface operator (.cge.)
+!    module procedure ge_cc
+!    module procedure ge_rr
+!    module procedure ge_ii
+!    module procedure ge_aa
+!    module procedure ge_cr
+!    module procedure ge_rc
+!    module procedure ge_ci
+!    module procedure ge_ic
+!    module procedure ge_ir
+!    module procedure ge_ri
+! end interface
+
+! ==
+!  interface operator (==)
+!     module procedure eq_cc
+!     module procedure eq_cr
+!     module procedure eq_rc
+!     module procedure eq_ci
+!     module procedure eq_ic
+!  end interface
+!  interface operator (.ceq.)
+!     module procedure eq_cc
+!     module procedure eq_rr
+!     module procedure eq_ii
+!     module procedure eq_aa
+!     module procedure eq_cr
+!     module procedure eq_rc
+!     module procedure eq_ci
+!     module procedure eq_ic
+!     module procedure eq_ir
+!     module procedure eq_ri
+
+!     module procedure eq_ccs
+!     module procedure eq_rrs
+!     module procedure eq_crs
+!     module procedure eq_rcs
+!     module procedure eq_cis
+!     module procedure eq_ics
+!     module procedure eq_irs
+!     module procedure eq_ris
+!     module procedure eq_cdcs
+!     module procedure eq_cscd
+!  end interface
+
+! /=
+!  interface operator (/=)
+!     module procedure ne_cc
+!     module procedure ne_cr
+!     module procedure ne_rc
+!     module procedure ne_ci
+!     module procedure ne_ic
+!  end interface
+!  interface operator (.cne.)
+!     module procedure ne_cc
+!     module procedure ne_rr
+!     module procedure ne_ii
+!     module procedure ne_aa
+!     module procedure ne_cr
+!     module procedure ne_rc
+!     module procedure ne_ci
+!     module procedure ne_ic
+!     module procedure ne_ir
+!     module procedure ne_ri
+! 
+!     module procedure ne_ccs
+!     module procedure ne_rrs
+!     module procedure ne_crs
+!     module procedure ne_rcs
+!     module procedure ne_cis
+!     module procedure ne_ics
+!     module procedure ne_irs
+!     module procedure ne_ris
+!     module procedure ne_cdcs
+!     module procedure ne_cscd
+!  end interface
+
+contains
+
+!******************************************************************************
+!
+!   Function definitions
+!
+!******************************************************************************
+
+!TINY
+  complex*16 function tiny_c(z)
+    complex*16, intent(in) :: z
+    tiny_c = dcmplx(tiny(dble(z)),0d0)
+  end function tiny_c
+!  complex*8 function tiny_cs(z)
+!    complex*8, intent(in) :: z
+!    tiny_cs = cmplx(tiny(real(z)),0.e0)
+!  end function tiny_cs
+
+! MINVAL
+  complex*16 function minval_c(array)
+    complex*16, intent(in) ::array(:)
+    integer :: ii
+    real*8 :: min_real, min_comp
+    min_real = minval(dble(array))
+    do ii=1,size(array)
+       if (dble(array(ii)).eq.min_real) then
+           min_comp = dimag(array(ii))
+       endif
+    enddo
+    minval_c = dcmplx(min_real,min_comp)
+  end function minval_c
+!  complex*8 function minval_cs(array)
+!    complex*8, intent(in) ::array(:)
+!    integer :: ii
+!    real*4 :: min_real, min_comp
+!    min_real = minval(real(array))
+!    do ii=1,size(array)
+!       if (real(array(ii)).eq.min_real) then
+!           min_comp = aimag(array(ii))
+!       endif
+!    enddo
+!    minval_cs = cmplx(min_real,min_comp)
+!  end function minval_cs
+
+  complex*16 function minval_2c(array)
+    complex*16, intent(in) ::array(:,:)
+    integer :: ii,jj
+    real*8 :: min_real, min_comp
+    min_real = minval(dble(array))
+    do ii=1,size(array,1)
+       do jj=1,size(array,2)
+       if (real(array(ii,jj)).eq.min_real) then
+           min_comp = dimag(array(ii,jj))
+       endif
+       enddo
+    enddo
+    minval_2c = dcmplx(min_real,min_comp)
+  end function minval_2c
+  complex*8 function minval_2cs(array)
+    complex*8, intent(in) ::array(:,:)
+    integer :: ii,jj
+    real*4 :: min_real, min_comp
+    min_real = minval(real(array))
+    do ii=1,size(array,1)
+       do jj=1,size(array,2)
+       if (real(array(ii,jj)).eq.min_real) then
+           min_comp = aimag(array(ii,jj))
+       endif
+       enddo
+    enddo
+    minval_2cs = cmplx(min_real,min_comp)
+  end function minval_2cs
+
+  complex*16 function minval_3c(array)
+    complex*16, intent(in) ::array(:,:,:)
+    integer :: ii,jj,kk
+    real*8 :: min_real, min_comp
+    min_real = minval(dble(array))
+    do ii=1,size(array,1)
+       do jj=1,size(array,2)
+          do kk=1,size(array,3)
+       if (dble(array(ii,jj,kk)).eq.min_real) then
+           min_comp = dimag(array(ii,jj,kk))
+       endif
+          enddo
+       enddo
+    enddo
+    minval_3c = dcmplx(min_real,min_comp)
+  end function minval_3c
+  complex*8 function minval_3cs(array)
+    complex*8, intent(in) ::array(:,:,:)
+    integer :: ii,jj,kk
+    real*4 :: min_real, min_comp
+    min_real = minval(real(array))
+    do ii=1,size(array,1)
+       do jj=1,size(array,2)
+          do kk=1,size(array,3)
+       if (real(array(ii,jj,kk)).eq.min_real) then
+           min_comp = aimag(array(ii,jj,kk))
+       endif
+          enddo
+       enddo
+    enddo
+    minval_3cs = cmplx(min_real,min_comp)
+  end function minval_3cs
+
+  complex*16 function minval_4c(array)
+    complex*16, intent(in) ::array(:,:,:,:)
+    integer :: ii,jj,kk,ll
+    real*8 :: min_real, min_comp
+    min_real = minval(dble(array))
+    do ii=1,size(array,1)
+       do jj=1,size(array,2)
+          do kk=1,size(array,3)
+             do ll=1,size(array,4)
+       if (dble(array(ii,jj,kk,ll)).eq.min_real) then
+           min_comp = dimag(array(ii,jj,kk,ll))
+       endif
+             enddo
+          enddo
+       enddo
+    enddo
+    minval_4c = dcmplx(min_real,min_comp)
+  end function minval_4c
+!  complex*8 function minval_4cs(array)
+!    complex*8, intent(in) ::array(:,:,:,:)
+!    integer :: ii,jj,kk,ll
+!    real*4 :: min_real, min_comp
+!    min_real = minval(real(array))
+!    do ii=1,size(array,1)
+!       do jj=1,size(array,2)
+!          do kk=1,size(array,3)
+!             do ll=1,size(array,4)
+!       if (real(array(ii,jj,kk,ll)).eq.min_real) then
+!           min_comp = aimag(array(ii,jj,kk,ll))
+!       endif
+!             enddo
+!          enddo
+!       enddo
+!    enddo
+!    minval_4cs = cmplx(min_real,min_comp)
+!  end function minval_4cs
+
+! MAXVAL
+  complex*16 function maxval_c(array)
+    complex*16, intent(in) ::array(:)
+    integer :: ii
+    real*8 :: max_real, max_comp
+    max_real = maxval(dble(array))
+    do ii=1,size(array)
+       if (dble(array(ii)).eq.max_real) then
+           max_comp = dimag(array(ii))
+       endif
+    enddo
+    maxval_c = dcmplx(max_real,max_comp)
+  end function maxval_c
+!  complex*8 function maxval_cs(array)
+!    complex*8, intent(in) ::array(:)
+!    integer :: ii
+!    real*4 :: max_real, max_comp
+!    max_real = maxval(real(array))
+!    do ii=1,size(array)
+!       if (real(array(ii)).eq.max_real) then
+!           max_comp = aimag(array(ii))
+!       endif
+!    enddo
+!    maxval_cs = cmplx(max_real,max_comp)
+!  end function maxval_cs
+!  
+  complex*16 function maxval_2c(array)
+    complex*16, intent(in) ::array(:,:)
+    integer :: ii,jj
+    real*8 :: max_real, max_comp
+    max_real = maxval(dble(array))
+    do ii=1,size(array,1)
+       do jj=1,size(array,2)
+       if (dble(array(ii,jj)).eq.max_real) then
+           max_comp = dimag(array(ii,jj))
+       endif
+       enddo
+    enddo
+    maxval_2c = dcmplx(max_real,max_comp)
+  end function maxval_2c
+  complex*8 function maxval_2cs(array)
+    complex*8, intent(in) ::array(:,:)
+    integer :: ii,jj
+    real*4 :: max_real, max_comp
+    max_real = maxval(real(array))
+    do ii=1,size(array,1)
+       do jj=1,size(array,2)
+       if (real(array(ii,jj)).eq.max_real) then
+           max_comp = aimag(array(ii,jj))
+       endif
+       enddo
+    enddo
+    maxval_2cs = cmplx(max_real,max_comp)
+  end function maxval_2cs
+
+  complex*16 function maxval_3c(array)
+    complex*16, intent(in) ::array(:,:,:)
+    integer :: ii,jj,kk
+    real*8 :: max_real, max_comp
+    max_real = maxval(dble(array))
+    do ii=1,size(array,1)
+       do jj=1,size(array,2)
+          do kk=1,size(array,3)
+       if (dble(array(ii,jj,kk)).eq.max_real) then
+           max_comp = dimag(array(ii,jj,kk))
+       endif
+          enddo
+       enddo
+    enddo
+    maxval_3c = dcmplx(max_real,max_comp)
+  end function maxval_3c
+  complex*8 function maxval_3cs(array)
+    complex*8, intent(in) ::array(:,:,:)
+    integer :: ii,jj,kk
+    real*4 :: max_real, max_comp
+    max_real = maxval(real(array))
+    do ii=1,size(array,1)
+       do jj=1,size(array,2)
+          do kk=1,size(array,3)
+       if (real(array(ii,jj,kk)).eq.max_real) then
+           max_comp = aimag(array(ii,jj,kk))         
+       endif
+          enddo
+       enddo
+    enddo
+    maxval_3cs = cmplx(max_real,max_comp)
+  end function maxval_3cs
+
+  complex*16 function maxval_4c(array)
+    complex*16, intent(in) ::array(:,:,:,:)
+    integer :: ii,jj,kk,ll
+    real*8 :: max_real, max_comp
+    max_real = maxval(dble(array))
+    do ii=1,size(array,1)
+       do jj=1,size(array,2)
+          do kk=1,size(array,3)
+             do ll=1,size(array,4)
+       if (dble(array(ii,jj,kk,ll)).eq.max_real) then
+           max_comp = dimag(array(ii,jj,kk,ll))
+       endif
+             enddo
+          enddo
+       enddo
+    enddo
+    maxval_4c = dcmplx(max_real,max_comp)
+  end function maxval_4c
+!  complex*8 function maxval_4cs(array)
+!    complex*8, intent(in) ::array(:,:,:,:)
+!    integer :: ii,jj,kk,ll
+!    real*4 :: max_real, max_comp
+!    max_real = maxval(real(array))
+!    do ii=1,size(array,1)
+!       do jj=1,size(array,2)
+!          do kk=1,size(array,3)
+!             do ll=1,size(array,4)
+!       if (real(array(ii,jj,kk,ll)).eq.max_real) then
+!           max_comp = aimag(array(ii,jj,kk,ll))
+!       endif
+!             enddo
+!          enddo
+!       enddo
+!    enddo
+!    maxval_4cs = cmplx(max_real,max_comp)
+!  end function maxval_4cs
+
+! ABS, intrinsic
+  complex*16 function abs_c(val)
+    complex*16, intent(in) :: val
+    abs_c = val
+    if (dble(val) < 0.d0) abs_c = dcmplx(-dble(val),-dimag(val))
+    return
+  end function abs_c
+  complex*8 function abs_cs(val)
+    complex*8, intent(in) :: val
+    abs_cs = val
+    if (real(val) < 0) abs_cs = cmplx(-real(val),-aimag(val))
+    return
+  end function abs_cs
+
+
+! COSD
+!  complex*16 function cosd_c(z)
+!    complex*16, intent(in) :: z
+!    cosd_c = cos(z*3.14159265358979323846/180.)
+!  end function cosd_c
+
+! SIND
+!  complex*16 function sind_c(z)
+!    complex*16, intent(in) :: z
+!    sind_c = sin(z*3.14159265358979323846/180.)
+!  end function sind_c
+
+! ACOS
+  complex*16 function acos_c(z)
+    complex*16, intent(in) :: z
+!   acos_c = - cmplx(0., 1.)*log(z+sqrt(z**2-1.))
+!   not general complex valued formula:
+    acos_c = dcmplx(acos(dble(z)),-dimag(z)/sqrt(1.d0-dble(z)**2))
+    return
+  end function acos_c
+!  complex*8 function acos_cs(z)
+!    complex*8, intent(in) :: z
+!   acos_cs = - cmplx(0., 1.)*log(z+sqrt(z**2-1.))
+!   not general complex valued formula:
+!    acos_cs = cmplx(acos(real(z)),-aimag(z)/sqrt(1.-real(z)**2))
+!    return
+!  end function acos_cs
+
+! ASIN
+!  complex*16 function asin_c(z)
+!    complex*16, intent(in) :: z
+!   asin_c = - cmplx(0., 1.)*log(cmplx(0.,1.)*z+sqrt(1.-z**2))
+!   not general complex valued formula:
+!    asin_c = cmplx(asin(real(z)),aimag(z)/sqrt(1.-real(z)**2))
+!    return
+!  end function asin_c
+!  complex*8 function asin_cs(z)
+!    complex*8, intent(in) :: z
+!   asin_cs = - cmplx(0., 1.)*log(cmplx(0.,1.)*z+sqrt(1.-z**2))
+!   not general complex valued formula:
+!    asin_cs = cmplx(asin(real(z)),aimag(z)/sqrt(1.-real(z)**2))
+!    return
+!  end function asin_cs
+
+! ATAN
+  complex*16 function atan_c(z)
+    complex*16, intent(in) :: z
+!   complex*16 z2
+!   real*8 pi2, xans, yans, r, r2, x, y
+!   pi2 = 2.0*atan(1.0)
+!   r      = sqrt(real(z)**2+aimag(z)**2)
+!   x      = real(z)
+!   y      = aimag(z)
+!   r2     = r*r
+!   xans   = 0.5*atan2 (2.0*x, 1.0-r2)
+!   yans   = 0.25*log((r2+2.0*y+1.0)/(r2-2.0*y+1.0))
+!   atan_c = cmplx (xans, yans)
+!   not general complex valued formula:
+    atan_c = dcmplx(atan(dble(z)),dimag(z)/(1.d0+dble(z)**2))
+    return
+  end function atan_c
+!  complex*8 function atan_cs(z)
+!    complex*8, intent(in) :: z
+!   complex*16 z2
+!   real*8 pi2, xans, yans, r, r2, x, y
+!   pi2 = 2.0*atan(1.0)
+!   r      = sqrt(real(z)**2+aimag(z)**2)
+!   x      = real(z)
+!   y      = aimag(z)
+!   r2     = r*r
+!   xans   = 0.5*atan2 (2.0*x, 1.0-r2)
+!   yans   = 0.25*log((r2+2.0*y+1.0)/(r2-2.0*y+1.0))
+!   atan_cs = cmplx (xans, yans)
+!   not general complex valued formula:
+!    atan_cs = cmplx(atan(real(z)),aimag(z)/(1.+real(z)**2))
+!    return
+!  end function atan_cs
+  
+! ATAN2
+!!  complex*16 function atan2_cc(csn, ccs)
+!!    complex*16, intent(in) :: csn, ccs
+!   real*8 pi
+!   pi = 4.0*atan(1.0)
+!   if (sqrt(real(ccs)**2 + aimag(ccs)**2).eq.0.) then  ! abs orig
+!     if (sqrt(real(csn)**2+aimag(csn)**2).eq.0.) then
+!       atan2_cc = cmplx(0.0)
+!     else
+!       atan2_cc = cmplx(sign(0.5*pi,real(csn)), 0.0)
+!     end if
+!   else
+!     atan2_cc = atan(csn/ccs)
+!     if (real(ccs).lt.0.) atan2_cc = atan2_cc + pi
+!     if (real(atan2_cc).gt.pi) atan2_cc = atan2_cc - 2.0*pi
+!   end if
+!   not general complex valued formula:
+!!    real*8 a,b,c,d
+!!    a=real(csn)
+!!    b=aimag(csn)
+!!    c=real(ccs)
+!!    d=aimag(ccs)
+!!    atan2_cc=cmplx(atan2(a,c),(c*b-a*d)/(a**2+c**2))
+!!    return
+!!  end function atan2_cc
+!!  complex*8 function atan2_ccs(csn, ccs)
+!!    complex*8, intent(in) :: csn, ccs
+!   real*8 pi
+!   pi = 4.0*atan(1.0)
+!   if (sqrt(real(ccs)**2 + aimag(ccs)**2).eq.0.) then  ! abs orig
+!     if (sqrt(real(csn)**2+aimag(csn)**2).eq.0.) then
+!       atan2_ccs = cmplx(0.0)
+!     else
+!       atan2_ccs = cmplx(sign(0.5*pi,real(csn)), 0.0)
+!     end if
+!   else
+!     atan2_ccs = atan(csn/ccs)
+!     if (real(ccs).lt.0.) atan2_ccs = atan2_ccs + pi
+!     if (real(atan2_ccs).gt.pi) atan2_ccs = atan2_ccs - 2.0*pi
+!   end if
+!   not general complex valued formula:
+!!    real*4 a,b,c,d
+!!    a=real(csn)
+!!    b=aimag(csn)
+!!    c=real(ccs)
+!!    d=aimag(ccs)
+!!    atan2_ccs=cmplx(atan2(a,c),(c*b-a*d)/(a**2+c**2))
+!!    return
+!!  end function atan2_ccs
+
+! COSH
+!  complex*16 function cosh_c(z)
+!    complex*16, intent(in) :: z
+!   complex*16 eplus, eminus
+!   eplus = exp(z)
+!   eminus = exp(z)
+!   cosh_c = (eplus + eminus)/2.
+!   not general complex valued formula:
+!    cosh_c=cmplx(cosh(real(z)),aimag(z)*sinh(real(z)))
+!    return
+!  end function cosh_c
+!  complex*8 function cosh_cs(z)
+!    complex*8, intent(in) :: z
+!   complex*8 eplus, eminus
+!   eplus = exp(z)
+!   eminus = exp(z)
+!   cosh_cs = (eplus + eminus)/2.
+!   not general complex valued formula:
+!    cosh_cs=cmplx(cosh(real(z)),aimag(z)*sinh(real(z)))
+!    return
+!  end function cosh_cs
+
+! SINH
+!  complex*16 function sinh_c(z)
+!    complex*16, intent(in) :: z
+!   complex*16 eplus, eminus
+!   eplus = exp(z)
+!   eminus = exp(z)
+!   sinh_c = (eplus - eminus)/2.
+!   not general complex valued formula:
+!    sinh_c=cmplx(sinh(real(z)),aimag(z)*cosh(real(z)))
+!    return
+!  end function sinh_c
+!  complex*8 function sinh_cs(z)
+!    complex*8, intent(in) :: z
+!   complex*16 eplus, eminus
+!   eplus = exp(z)
+!   eminus = exp(z)
+!   sinh_cs = (eplus - eminus)/2.
+!   not general complex valued formula:
+!    sinh_cs=cmplx(sinh(real(z)),aimag(z)*cosh(real(z)))
+!    return
+!  end function sinh_cs
+
+! TAN
+!  complex*16 function tan_c(z)
+!    complex*16, intent(in) :: z
+!   complex*16 eiplus, eiminus
+!   eiplus = exp(cmplx(0.,1.)*z)
+!   eiminus = exp(-cmplx(0.,1.)*z)
+!   tan_c = cmplx(0.,1.)*(eiminus - eiplus)/(eiplus + eiminus)
+!   not general complex valued formula:
+!    tan_c=cmplx(tan(real(z)),aimag(z)/cos(real(z))**2)
+!    return
+!  end function tan_c
+!  complex*8 function tan_cs(z)
+!    complex*8, intent(in) :: z
+!   complex*16 eiplus, eiminus
+!   eiplus = exp(cmplx(0.,1.)*z)
+!   eiminus = exp(-cmplx(0.,1.)*z)
+!   tan_cs = cmplx(0.,1.)*(eiminus - eiplus)/(eiplus + eiminus)
+!   not general complex valued formula:
+!    tan_cs=cmplx(tan(real(z)),aimag(z)/cos(real(z))**2)
+!    return
+!  end function tan_cs
+  
+! TANH
+!  complex*16 function tanh_c(a)
+!    complex*16, intent(in) :: a
+!   complex*16 eplus, eminus
+!   if(real(a) > 50)then
+!     tanh_c = 1.
+!   else
+!     eplus = exp(a)
+!     eminus = exp(-a)
+!     tanh_c = (eplus - eminus)/(eplus + eminus)
+!   end if
+!   not general complex valued formula:
+!    tanh_c=cmplx(tanh(real(a)),aimag(a)/cosh(real(a))**2)
+!    return
+!  end function tanh_c
+!  complex*8 function tanh_cs(a)
+!    complex*8, intent(in) :: a
+!   complex*16 eplus, eminus
+!   if(real(a) > 50)then
+!     tanh_cs = 1.
+!   else
+!     eplus = exp(a)
+!     eminus = exp(-a)
+!     tanh_cs = (eplus - eminus)/(eplus + eminus)
+!   end if
+!   not general complex valued formula:
+!    tanh_cs=cmplx(tanh(real(a)),aimag(a)/cosh(real(a))**2)
+!    return
+!  end function tanh_cs
+
+! MAX, intrinsic
+  complex*16 function max_cc(val1, val2)
+    complex*16, intent(in) :: val1, val2
+    if (dble(val1) > dble(val2)) then
+      max_cc = val1
+    else
+      max_cc = val2
+    endif
+    return
+  end function max_cc
+  complex*16 function max_cr(val1, val2)
+    complex*16, intent(in) :: val1    
+    real*8, intent(in) :: val2    
+    if (dble(val1) > val2) then
+      max_cr = val1
+    else
+      max_cr = dcmplx(val2, 0.d0)
+    endif
+    return
+  end function max_cr
+  complex*16 function max_rc(val1, val2)
+    real*8, intent(in) :: val1
+    complex*16, intent(in) :: val2
+    if (val1 > dble(val2)) then
+      max_rc = dcmplx(val1, 0.d0)
+    else
+      max_rc = val2
+    endif
+    return
+  end function max_rc
+  complex*16 function max_ccc(val1, val2, val3)
+    complex*16, intent(in) :: val1, val2, val3
+    if (dble(val1) > dble(val2)) then
+      max_ccc = val1
+    else
+      max_ccc = val2
+    endif
+    if (dble(val3) > dble(max_ccc)) then
+      max_ccc = val3
+    endif
+    return
+  end function max_ccc
+!  function max_cccc(val1, val2, val3, val4)
+!    complex*16, intent(in) :: val1, val2, val3, val4
+!    complex*16 max_cccc
+!    complex*16 max_cccc2
+!    if (real(val1) > real(val2)) then
+!      max_cccc = val1
+!    else
+!      max_cccc = val2
+!    endif
+!    if (real(val3) > real(val4)) then
+!      max_cccc2 = val3
+!    else
+!      max_cccc2 = val4
+!    endif
+!    if (real(max_cccc2) > real(max_cccc)) then
+!      max_cccc = max_cccc2
+!    endif
+!    return
+!  end function max_cccc
+!  
+!  complex*8 function max_ccs(val1, val2)
+!    complex*8, intent(in) :: val1, val2
+!    if (real(val1) > real(val2)) then
+!      max_ccs = val1
+!    else
+!      max_ccs = val2
+!    endif
+!    return
+!  end function max_ccs
+  complex*8 function max_crs(val1, val2)
+    complex*8, intent(in) :: val1
+    real*4, intent(in) :: val2
+    if (real(val1) > val2) then
+      max_crs = val1
+    else
+      max_crs = cmplx(val2, 0.)
+    endif
+    return
+  end function max_crs
+  complex*8 function max_csrd(val1, val2)
+    complex*8, intent(in) :: val1
+    real*8, intent(in) :: val2
+    if (real(val1) > val2) then
+      max_csrd = val1
+    else
+      max_csrd = cmplx(val2, 0.)
+    endif
+    return
+  end function max_csrd
+!  integer function max_ii(val1, val2)
+!    integer, intent(in) :: val1
+!    integer, intent(in) :: val2
+!    if (val1 > val2) then
+!      max_ii = val1
+!    else
+!      max_ii = val2
+!    endif
+!    return
+!  end function max_ii
+  complex*8 function max_cscd(val1, val2)
+    complex*8, intent(in) :: val1
+    complex*16, intent(in) :: val2
+    if (real(val1) > dble(val2)) then
+      max_cscd = val1
+    else
+      max_cscd = val2
+    endif
+    return
+  end function max_cscd
+!
+  complex*16 function max_cdcs(val1, val2)
+    complex*16, intent(in) :: val1
+    complex*8, intent(in) :: val2
+    if (dble(val1) > real(val2)) then
+      max_cdcs = val1
+    else
+      max_cdcs = val2
+    endif
+    return
+  end function max_cdcs
+!
+!  complex*8 function max_rcs(val1, val2)
+!    real*4, intent(in) :: val1
+!    complex*8, intent(in) :: val2
+!    if (val1 > real(val2)) then
+!      max_rcs = cmplx(val1, 0.)
+!    else
+!      max_rcs = val2
+!    endif
+!    return
+!  end function max_rcs
+!  complex*8 function max_cccs(val1, val2, val3)
+!    complex*8, intent(in) :: val1, val2, val3
+!    if (real(val1) > real(val2)) then
+!      max_cccs = val1
+!    else
+!      max_cccs = val2
+!    endif
+!    if (real(val3) > real(max_cccs)) then
+!      max_cccs = val3
+!    endif
+!    return
+!  end function max_cccs
+!  function max_ccccs(val1, val2, val3, val4)
+!    complex*8, intent(in) :: val1, val2, val3, val4
+!    complex*8 max_ccccs
+!    complex*8 max_cccc2s
+!    if (real(val1) > real(val2)) then
+!      max_ccccs = val1
+!    else
+!      max_ccccs = val2
+!    endif
+!    if (real(val3) > real(val4)) then
+!      max_cccc2s = val3
+!    else
+!      max_cccc2s = val4
+!    endif
+!    if (real(max_cccc2s) > real(max_ccccs)) then
+!      max_ccccs = max_cccc2s
+!    endif
+!    return
+!  end function max_ccccs
+!  
+!
+! MIN, intrinsic
+  complex*16 function min_cc(val1, val2)
+    complex*16, intent(in) :: val1, val2
+    if (dble(val1) < dble(val2)) then
+      min_cc = val1
+    else
+      min_cc = val2
+    endif
+    return
+  end function min_cc
+  complex*16 function min_cr(val1, val2)
+    complex*16, intent(in) :: val1    
+    real*8, intent(in) :: val2    
+    if (dble(val1) < val2) then
+      min_cr = val1
+    else
+      min_cr = val2
+    endif
+    return
+  end function min_cr
+  complex*16 function min_rc(val1, val2)
+    real*8, intent(in) :: val1
+    complex*16, intent(in) :: val2
+    if (val1 < dble(val2)) then
+      min_rc = dcmplx(val1, 0.d0)
+    else
+      min_rc = val2
+    endif
+    return
+  end function min_rc
+  complex*16 function min_ccc(val1, val2, val3)
+    complex*16, intent(in) :: val1, val2, val3
+    if (dble(val1) < dble(val2)) then
+      min_ccc = val1
+    else
+      min_ccc = val2
+    endif
+    if (dble(val3) < dble(min_ccc)) then
+      min_ccc = val3
+    endif
+    return
+  end function min_ccc
+  complex*16 function min_rcc(val1, val2, val3)
+    real*8, intent(in) :: val1
+    complex*16, intent(in) :: val2, val3
+    if ( val1 < dble(val2)) then
+      min_rcc = dcmplx(val1,0d0)
+    else
+      min_rcc = val2
+    endif
+    if (dble(val3) < dble(min_rcc)) then
+      min_rcc = val3
+    endif
+    return
+  end function min_rcc
+!  function min_cccc(val1, val2, val3, val4)
+!    complex*16, intent(in) :: val1, val2, val3, val4
+!    complex*16 min_cccc
+!    complex*16 min_cccc2
+!    if (real(val1) < real(val2)) then
+!      min_cccc = val1
+!    else
+!      min_cccc = val2
+!    endif
+!    if (real(val3) < real(val4)) then
+!      min_cccc2 = val3
+!    else
+!      min_cccc2 = val4
+!    endif
+!    if (real(min_cccc2) < real(min_cccc)) then
+!      min_cccc = min_cccc2
+!    endif
+!    return
+!  end function min_cccc
+!  
+!  complex*8 function min_ccs(val1, val2)
+!    complex*8, intent(in) :: val1, val2
+!    if (real(val1) < real(val2)) then
+!      min_ccs = val1
+!    else
+!      min_ccs = val2
+!    endif
+!    return
+!  end function min_ccs
+!  complex*8 function min_crs(val1, val2)
+!    complex*8, intent(in) :: val1
+!    real*4, intent(in) :: val2
+!    if (real(val1) < val2) then
+!      min_crs = val1
+!    else
+!      min_crs = cmplx(val2, 0.)
+!    endif
+!    return
+!  end function min_crs
+!  complex*8 function min_rcs(val1, val2)
+!    real*4, intent(in) :: val1
+!    complex*8, intent(in) :: val2
+!    if (val1 < real(val2)) then
+!      min_rcs = cmplx(val1, 0.)
+!    else
+!      min_rcs = val2
+!    endif
+!    return
+!  end function min_rcs
+!  complex*8 function min_cccs(val1, val2, val3)
+!    complex*8, intent(in) :: val1, val2, val3
+!    if (real(val1) < real(val2)) then
+!      min_cccs = val1
+!    else
+!      min_cccs = val2
+!    endif
+!    if (real(val3) < real(min_cccs)) then
+!      min_cccs = val3
+!    endif
+!    return
+!  end function min_cccs
+!  function min_ccccs(val1, val2, val3, val4)
+!    complex*8, intent(in) :: val1, val2, val3, val4
+!    complex*8 min_ccccs
+!    complex*8 min_cccc2s
+!    if (real(val1) < real(val2)) then
+!      min_ccccs = val1
+!    else
+!      min_ccccs = val2
+!    endif
+!    if (real(val3) < real(val4)) then
+!      min_cccc2s = val3
+!    else
+!      min_cccc2s = val4
+!    endif
+!    if (real(min_cccc2s) < real(min_ccccs)) then
+!      min_ccccs = min_cccc2s
+!    endif
+!    return
+!  end function min_ccccs
+!
+!  
+! SIGN, intrinsic, assume that val1 is always a complex*16
+!                  in reality could be int
+  complex*16 function sign_cc(val1, val2)
+    complex*16, intent(in) :: val1, val2
+    real*8  sign
+    if (dble(val2) < 0.d0) then
+      sign = -1.d0
+    else
+      sign = 1.d0
+    endif
+    sign_cc = sign * val1
+    return
+  end function sign_cc
+!  complex*16 function sign_cr(val1, val2)
+!    complex*16, intent(in) :: val1
+!    real*8, intent(in) :: val2
+!    real*8 sign
+!    if (real(val2) < 0.) then
+!      sign = -1.
+!    else
+!      sign = 1.
+!    endif
+!    sign_cr = sign * val1
+!    return
+!  end function sign_cr
+  complex*16 function sign_rc(val1, val2)
+    real*8, intent(in) :: val1
+    complex*16, intent(in) :: val2
+    real*8 sign
+    if (dble(val2) < 0.d0) then
+      sign = -1.d0
+    else
+      sign = 1.d0
+    endif
+    sign_rc = dcmplx(sign * val1)
+    return
+  end function sign_rc
+!
+!  complex*8 function sign_ccs(val1, val2)
+!    complex*8, intent(in) :: val1, val2
+!    real*4  sign
+!    if (real(val2) < 0.) then
+!      sign = -1.
+!    else
+!      sign = 1.
+!    endif
+!    sign_ccs = sign * val1
+!    return
+!  end function sign_ccs
+!  complex*8 function sign_crs(val1, val2)
+!    complex*8, intent(in) :: val1
+!    real*4, intent(in) :: val2
+!    real*4 sign
+!    if (real(val2) < 0.) then
+!      sign = -1.
+!    else
+!      sign = 1.
+!    endif
+!    sign_crs = sign * val1
+!    return
+!  end function sign_crs
+!  complex*8 function sign_rcs(val1, val2)
+!    real*4, intent(in) :: val1
+!    complex*8, intent(in) :: val2
+!    real*4 sign
+!    if (real(val2) < 0.) then
+!      sign = -1.
+!    else
+!      sign = 1.
+!    endif
+!    sign_rcs = sign * val1
+!    return
+!  end function sign_rcs
+
+! DIM, intrinsic
+!  complex*16 function dim_cc(val1, val2)
+!    complex*16, intent(in) :: val1, val2
+!    if (val1 > val2) then
+!      dim_cc = val1 - val2
+!    else
+!      dim_cc = cmplx(0., 0.)
+!    endif
+!    return
+!  end function dim_cc
+!  complex*16 function dim_cr(val1, val2)
+!    complex*16, intent(in) :: val1
+!    real*8, intent(in) :: val2
+!    if (val1 > val2) then
+!      dim_cr = val1 - cmplx(val2, 0.)
+!    else
+!      dim_cr = cmplx(0., 0.)
+!    endif
+!    return
+!  end function dim_cr
+!  complex*16 function dim_rc(val1, val2)
+!    real*8, intent(in) :: val1
+!    complex*16, intent(in) :: val2
+!    if (val1 > val2) then
+!      dim_rc = cmplx(val1, 0.) - val2
+!    else
+!      dim_rc = cmplx(0., 0.)
+!    endif
+!    return
+!  end function dim_rc
+
+!  complex*8 function dim_ccs(val1, val2)
+!    complex*8, intent(in) :: val1, val2
+!    if (val1 > val2) then
+!      dim_ccs = val1 - val2
+!    else
+!      dim_ccs = cmplx(0., 0.)
+!    endif
+!    return
+!  end function dim_ccs
+!  complex*8 function dim_crs(val1, val2)
+!    complex*8, intent(in) :: val1
+!    real*4, intent(in) :: val2
+!    if (val1 > val2) then
+!      dim_crs = val1 - cmplx(val2, 0.)
+!    else
+!      dim_crs = cmplx(0., 0.)
+!    endif
+!    return
+!  end function dim_crs
+!  complex*8 function dim_rcs(val1, val2)
+!    real*4, intent(in) :: val1
+!    complex*8, intent(in) :: val2
+!    if (val1 > val2) then
+!      dim_rcs = cmplx(val1, 0.) - val2
+!    else
+!      dim_rcs = cmplx(0., 0.)
+!    endif
+!    return
+!  end function dim_rcs
+!  
+! LOG10
+!  complex*16 function log10_c(z)
+!    complex*16, intent(in) :: z
+!    log10_c=log(z)/log((10.0,0.0))
+!  end function log10_c
+!  complex*8 function log10_cs(z)
+!    complex*8, intent(in) :: z
+!    log10_cs=log(z)/log((10.0,0.0))
+!  end function log10_cs
+
+! DLOG
+!  complex*16 function dlog_c(z)
+!    complex*16, intent(in) :: z
+!    dlog_c=log(z)
+!  end function dlog_c
+!  complex*16 function dlog_cs(z)
+!    complex*8, intent(in) :: z
+!    dlog_cs=log(z)
+!  end function dlog_cs
+!  complex*16 function dlog_r(z)
+!    real*8, intent(in) :: z
+!    dlog_r=log(z)
+!  end function dlog_r
+!  complex*16 function dlog_rs(z)
+!    real*4, intent(in) :: z
+!    dlog_rs=log(z)
+!  end function dlog_rs
+
+! DEXP
+!  complex*16 function dexp_c(z)
+!    complex*16, intent(in) :: z
+!    dexp_c=exp(z)
+!  end function dexp_c
+!  complex*16 function dexp_cs(z)
+!    complex*8, intent(in) :: z
+!    dexp_cs=exp(z)
+!  end function dexp_cs
+!  complex*16 function dexp_r(z)
+!    real*8, intent(in) :: z
+!    dexp_r=exp(z)
+!  end function dexp_r
+!  complex*16 function dexp_rs(z)
+!    real*4, intent(in) :: z
+!    dexp_rs=exp(z)
+!  end function dexp_rs
+
+! FLOOR 
+  integer function floor_c(z)
+    complex*16, intent(in) :: z
+    floor_c = floor(dble(z))
+  end function floor_c
+  integer function floor_cs(z)
+    complex*8, intent(in) :: z
+    floor_cs = floor(real(z))
+  end function floor_cs
+
+! CEILING
+!  integer function ceiling_c(z)
+!    complex*16, intent(in) :: z
+!    ceiling_c = ceiling(real(z))
+!  end function ceiling_c
+!  integer function ceiling_cs(z)
+!    complex*8, intent(in) :: z
+!    ceiling_cs = ceiling(real(z))
+!  end function ceiling_cs
+
+
+
+! NINT
+  integer function nint_c(z)
+    complex*16, intent(in) :: z
+    nint_c=nint(dble(z))
+  end function nint_c
+  integer function nint_cs(z)
+    complex*8, intent(in) :: z
+    nint_cs=nint(real(z))
+  end function nint_cs
+
+! EPSILON !! bad news ulness compiled with -r8
+!  complex*16 function epsilon_c(z)
+!    complex*16, intent(in) :: z
+!    epsilon_c=epsilon(real(z))
+!  end function epsilon_c
+
+! <, .lt.
+  logical function lt_cc(lhs, rhs)
+    complex*16, intent(in) :: lhs, rhs
+    lt_cc = dble(lhs) < dble(rhs)
+  end function lt_cc
+  logical function lt_cr(lhs, rhs)
+    complex*16, intent(in) :: lhs
+    real*8, intent(in) :: rhs
+    lt_cr = dble(lhs) < rhs
+  end function lt_cr
+!  logical function lt_rc(lhs, rhs)
+!    real*8, intent(in) :: lhs
+!    complex*16, intent(in) :: rhs
+!    lt_rc = lhs < real(rhs)
+!  end function lt_rc
+  logical function lt_ci(lhs, rhs)
+    complex*16, intent(in) :: lhs
+    integer, intent(in) :: rhs
+    lt_ci = dble(lhs) < rhs
+  end function lt_ci
+!  logical function lt_ic(lhs, rhs)
+!    integer, intent(in) :: lhs
+!    complex*16, intent(in) :: rhs
+!    lt_ic = lhs < real(rhs)
+!  end function lt_ic
+!
+  logical function lt_ccs(lhs, rhs)
+    complex*8, intent(in) :: lhs, rhs
+    lt_ccs = real(lhs) < real(rhs)
+  end function lt_ccs
+  logical function lt_crs(lhs, rhs)
+    complex*8, intent(in) :: lhs
+    real*4, intent(in) :: rhs
+    lt_crs = real(lhs) < rhs
+  end function lt_crs
+!  logical function lt_rcs(lhs, rhs)
+!    real*4, intent(in) :: lhs
+!    complex*8, intent(in) :: rhs
+!    lt_rcs = lhs < real(rhs)
+!  end function lt_rcs
+  logical function lt_cis(lhs, rhs)
+    complex*8, intent(in) :: lhs
+    integer, intent(in) :: rhs
+    lt_cis = real(lhs) < rhs
+  end function lt_cis
+!  logical function lt_ics(lhs, rhs)
+!    integer, intent(in) :: lhs
+!    complex*8, intent(in) :: rhs
+!    lt_ics = lhs < real(rhs)
+!  end function lt_ics
+  logical function lt_csrd(lhs, rhs)
+    complex*8, intent(in) :: lhs
+    real*8, intent(in) :: rhs
+    lt_csrd = real(lhs) < rhs
+  end function lt_csrd
+  logical function lt_cdcs(lhs, rhs)
+    complex*16, intent(in) :: lhs
+    complex*8, intent(in) :: rhs
+    lt_cdcs = dble(lhs) < real(rhs)
+  end function lt_cdcs
+  logical function lt_cscd(lhs, rhs)
+    complex*8, intent(in) :: lhs
+    complex*16, intent(in) :: rhs
+    lt_cscd = real(lhs) < dble(rhs)
+  end function lt_cscd
+  logical function lt_cdrs(lhs, rhs)
+    complex*16, intent(in) :: lhs
+    real*4, intent(in) :: rhs
+    lt_cdrs = dble(lhs) < rhs
+  end function lt_cdrs
+
+! <=, .le.
+  logical function le_cc(lhs, rhs)
+    complex*16, intent(in) :: lhs, rhs
+    le_cc = dble(lhs) <= dble(rhs)
+  end function le_cc
+  logical function le_cr(lhs, rhs)
+    complex*16, intent(in) :: lhs
+    real*8, intent(in) :: rhs
+    le_cr = dble(lhs) <= rhs
+  end function le_cr
+!  logical function le_rc(lhs, rhs)
+!    real*8, intent(in) :: lhs
+!    complex*16, intent(in) :: rhs
+!    le_rc = lhs <= real(rhs)
+!  end function le_rc
+  logical function le_ci(lhs, rhs)
+    complex*16, intent(in) :: lhs
+    integer, intent(in) :: rhs
+    le_ci = dble(lhs) <= rhs
+  end function le_ci
+  logical function le_ic(lhs, rhs)
+    integer, intent(in) :: lhs
+    complex*16, intent(in) :: rhs
+    le_ic = lhs <= dble(rhs)
+  end function le_ic 
+
+!  logical function le_ccs(lhs, rhs)
+!    complex*8, intent(in) :: lhs, rhs
+!    le_ccs = real(lhs) <= real(rhs)
+!  end function le_ccs
+!  logical function le_crs(lhs, rhs)
+!    complex*8, intent(in) :: lhs
+!    real*4, intent(in) :: rhs
+!    le_crs = real(lhs) <= rhs
+!  end function le_crs
+!  logical function le_rcs(lhs, rhs)
+!    real*4, intent(in) :: lhs
+!    complex*8, intent(in) :: rhs
+!    le_rcs = lhs <= real(rhs)
+!  end function le_rcs
+!  logical function le_cis(lhs, rhs)
+!    complex*8, intent(in) :: lhs
+!    integer, intent(in) :: rhs
+!    le_cis = real(lhs) <= rhs
+!  end function le_cis
+!  logical function le_ics(lhs, rhs)
+!    integer, intent(in) :: lhs
+!    complex*8, intent(in) :: rhs
+!    le_ics = lhs <= real(rhs)
+!  end function le_ics
+  logical function le_cdcs(lhs, rhs)
+    complex*16, intent(in) :: lhs
+    complex*8, intent(in) :: rhs
+    le_cdcs = dble(lhs) <= real(rhs)
+  end function le_cdcs
+!  logical function le_cscd(lhs, rhs)
+!    complex*8, intent(in) :: lhs
+!    complex*16, intent(in) :: rhs
+!    le_cscd = real(lhs) <= real(rhs)
+!  end function le_cscd
+  logical function le_rscd(lhs, rhs)
+    real*4, intent(in) :: lhs
+    complex*16, intent(in) :: rhs
+    le_rscd = lhs <= dble(rhs)
+  end function le_rscd
+  logical function le_cdrs(lhs, rhs)
+    complex*16, intent(in) :: lhs
+    real*4, intent(in) :: rhs
+    le_cdrs = dble(lhs) <= rhs
+  end function le_cdrs
+
+! >, .gt.
+  logical function gt_cc(lhs, rhs)
+    complex*16, intent(in) :: lhs, rhs
+    gt_cc = dble(lhs) > dble(rhs)
+  end function gt_cc
+  logical function gt_cr(lhs, rhs)
+    complex*16, intent(in) :: lhs
+    real*8, intent(in) :: rhs
+    gt_cr = dble(lhs) > rhs
+  end function gt_cr
+!  logical function gt_rc(lhs, rhs)
+!    real*8, intent(in) :: lhs
+!    complex*16, intent(in) :: rhs
+!    gt_rc = lhs > real(rhs)
+!  end function gt_rc
+  logical function gt_ci(lhs, rhs)
+    complex*16, intent(in) :: lhs
+    integer, intent(in) :: rhs
+    gt_ci = dble(lhs) > rhs
+  end function gt_ci
+  logical function gt_ic(lhs, rhs)
+    integer, intent(in) :: lhs
+    complex*16, intent(in) :: rhs
+    gt_ic = lhs > dble(rhs)
+  end function gt_ic
+
+  logical function gt_ccs(lhs, rhs)
+    complex*8, intent(in) :: lhs, rhs
+    gt_ccs = real(lhs) > real(rhs)
+  end function gt_ccs
+  logical function gt_crs(lhs, rhs)
+    complex*8, intent(in) :: lhs
+    real*4, intent(in) :: rhs
+    gt_crs = real(lhs) > rhs
+  end function gt_crs
+!  logical function gt_rcs(lhs, rhs)
+!    real*4, intent(in) :: lhs
+!    complex*8, intent(in) :: rhs
+!    gt_rcs = lhs > real(rhs)
+!  end function gt_rcs
+  logical function gt_cis(lhs, rhs)
+    complex*8, intent(in) :: lhs
+    integer, intent(in) :: rhs
+    gt_cis = real(lhs) > rhs
+  end function gt_cis
+!  logical function gt_ics(lhs, rhs)
+!    integer, intent(in) :: lhs
+!    complex*8, intent(in) :: rhs
+!    gt_ics = lhs > real(rhs)
+!  end function gt_ics
+  logical function gt_cdcs(lhs, rhs)
+    complex*16, intent(in) :: lhs
+    complex*8, intent(in) :: rhs
+    gt_cdcs = dble(lhs) > real(rhs)
+  end function gt_cdcs
+  logical function gt_cscd(lhs, rhs)
+    complex*8, intent(in) :: lhs
+    complex*16, intent(in) :: rhs
+    gt_cscd = real(lhs) > dble(rhs)
+  end function gt_cscd
+  logical function gt_cdrs(lhs, rhs)
+    complex*16, intent(in) :: lhs
+    real*4, intent(in) :: rhs
+    gt_cdrs = dble(lhs) > rhs
+  end function gt_cdrs
+!
+!
+!
+!!! here are the redefined ones:
+!! >=, .ge.
+  logical function ge_cc(lhs, rhs)
+    complex*16, intent(in) :: lhs, rhs
+    ge_cc = dble(lhs) >= dble(rhs)
+  end function ge_cc
+!  logical function ge_rr(lhs, rhs)
+!    real*8, intent(in) :: lhs, rhs
+!    ge_rr = lhs >= rhs
+!  end function ge_rr
+  logical function ge_cr(lhs, rhs)
+    complex*16, intent(in) :: lhs
+    real*8, intent(in) :: rhs
+    ge_cr = dble(lhs) >= rhs
+  end function ge_cr
+!  logical function ge_rc(lhs, rhs)
+!    real*8, intent(in) :: lhs
+!    complex*16, intent(in) :: rhs
+!    ge_rc = lhs >= real(rhs)
+!  end function ge_rc
+  logical function ge_ci(lhs, rhs)
+    complex*16, intent(in) :: lhs
+    integer, intent(in) :: rhs
+    ge_ci = dble(lhs) >= rhs
+  end function ge_ci
+!  logical function ge_ic(lhs, rhs)
+!    integer, intent(in) :: lhs
+!    complex*16, intent(in) :: rhs
+!    ge_ic = lhs >= real(rhs)
+!  end function ge_ic
+!  logical function ge_ir(lhs, rhs)
+!    integer, intent(in) :: lhs
+!    real*8, intent(in) :: rhs
+!    ge_ir = lhs >= rhs
+!  end function ge_ir
+!  logical function ge_ri(lhs, rhs)
+!    real*8, intent(in) :: lhs
+!    integer, intent(in) :: rhs
+!    ge_ri = lhs >= rhs
+!  end function ge_ri
+!
+!  logical function ge_ccs(lhs, rhs)
+!    complex*8, intent(in) :: lhs, rhs
+!    ge_ccs = real(lhs) >= real(rhs)
+!  end function ge_ccs
+!  logical function ge_rrs(lhs, rhs)
+!    real*4, intent(in) :: lhs, rhs
+!    ge_rrs = lhs >= rhs
+!  end function ge_rrs
+!  logical function ge_ii(lhs, rhs)
+!    integer, intent(in) :: lhs, rhs
+!    ge_ii = lhs >= rhs
+!  end function ge_ii
+!  logical function ge_aa(lhs, rhs)
+!    character(len=*), intent(in) :: lhs, rhs
+!    ge_aa = lhs >= rhs
+!  end function ge_aa
+!  logical function ge_crs(lhs, rhs)
+!    complex*8, intent(in) :: lhs
+!    real*4, intent(in) :: rhs
+!    ge_crs = real(lhs) >= rhs
+!  end function ge_crs
+!  logical function ge_rcs(lhs, rhs)
+!    real*4, intent(in) :: lhs
+!    complex*8, intent(in) :: rhs
+!    ge_rcs = lhs >= real(rhs)
+!  end function ge_rcs
+!  logical function ge_cis(lhs, rhs)
+!    complex*8, intent(in) :: lhs
+!    integer, intent(in) :: rhs
+!    ge_cis = real(lhs) >= rhs
+!  end function ge_cis
+!  logical function ge_ics(lhs, rhs)
+!    integer, intent(in) :: lhs
+!    complex*8, intent(in) :: rhs
+!    ge_ics = lhs >= real(rhs)
+!  end function ge_ics
+!  logical function ge_irs(lhs, rhs)
+!    integer, intent(in) :: lhs
+!    real*4, intent(in) :: rhs
+!    ge_irs = lhs >= rhs
+!  end function ge_irs
+!  logical function ge_ris(lhs, rhs)
+!    real*4, intent(in) :: lhs
+!    integer, intent(in) :: rhs
+!    ge_ris = lhs >= rhs
+!  end function ge_ris
+!  logical function ge_cdcs(lhs, rhs)
+!    complex*16, intent(in) :: lhs
+!    complex*8, intent(in) :: rhs
+!    ge_cdcs = real(lhs) >= real(rhs)
+!  end function ge_cdcs
+  logical function ge_cscd(lhs, rhs)
+    complex*8, intent(in) :: lhs
+    complex*16, intent(in) :: rhs
+    ge_cscd = real(lhs) >= dble(rhs)
+  end function ge_cscd
+  logical function ge_cdrs(lhs, rhs)
+    complex*16, intent(in) :: lhs
+    real*4, intent(in) :: rhs
+    ge_cdrs = dble(lhs) >= rhs
+  end function ge_cdrs
+  logical function ge_csrd(lhs, rhs)
+    complex*8, intent(in) :: lhs
+    real*8, intent(in) :: rhs
+    ge_csrd = real(lhs) >= rhs
+  end function ge_csrd
+!
+!
+!
+!! ==, .eq.
+!  logical function eq_cc(lhs, rhs)
+!    complex*16, intent(in) :: lhs, rhs
+!    eq_cc = real(lhs) == real(rhs)
+!  end function eq_cc
+!  logical function eq_rr(lhs, rhs)
+!    real*8, intent(in) :: lhs, rhs
+!    eq_rr = lhs == rhs
+!  end function eq_rr
+!  logical function eq_ii(lhs, rhs)
+!    integer, intent(in) :: lhs, rhs
+!    eq_ii = lhs == rhs
+!  end function eq_ii
+!  logical function eq_aa(lhs, rhs)
+!    character(len=*), intent(in) :: lhs, rhs
+!    eq_aa = lhs == rhs
+!  end function eq_aa
+!  logical function eq_cr(lhs, rhs)
+!    complex*16, intent(in) :: lhs
+!    real*8, intent(in) :: rhs
+!    eq_cr = real(lhs) == rhs
+!  end function eq_cr
+!  logical function eq_rc(lhs, rhs)
+!    real*8, intent(in) :: lhs
+!    complex*16, intent(in) :: rhs
+!    eq_rc = lhs == real(rhs)
+!  end function eq_rc
+!  logical function eq_ci(lhs, rhs)
+!    complex*16, intent(in) :: lhs
+!    integer, intent(in) :: rhs
+!    eq_ci = real(lhs) == rhs
+!  end function eq_ci
+!  logical function eq_ic(lhs, rhs)
+!    integer, intent(in) :: lhs
+!    complex*16, intent(in) :: rhs
+!    eq_ic = lhs == real(rhs)
+!  end function eq_ic
+!  logical function eq_ir(lhs, rhs)
+!    integer, intent(in) :: lhs
+!    real*8, intent(in) :: rhs
+!    eq_ir = lhs == rhs
+!  end function eq_ir
+!  logical function eq_ri(lhs, rhs)
+!    real*8, intent(in) :: lhs
+!    integer, intent(in) :: rhs
+!    eq_ri = lhs == rhs
+!  end function eq_ri
+!
+!  logical function eq_ccs(lhs, rhs)
+!    complex*8, intent(in) :: lhs, rhs
+!    eq_ccs = real(lhs) == real(rhs)
+!  end function eq_ccs
+!  logical function eq_rrs(lhs, rhs)
+!    real*4, intent(in) :: lhs, rhs
+!    eq_rrs = lhs == rhs
+!  end function eq_rrs
+!  logical function eq_crs(lhs, rhs)
+!    complex*8, intent(in) :: lhs
+!    real*4, intent(in) :: rhs
+!    eq_crs = real(lhs) == rhs
+!  end function eq_crs
+!  logical function eq_rcs(lhs, rhs)
+!    real*4, intent(in) :: lhs
+!    complex*8, intent(in) :: rhs
+!    eq_rcs = lhs == real(rhs)
+!  end function eq_rcs
+!  logical function eq_cis(lhs, rhs)
+!    complex*8, intent(in) :: lhs
+!    integer, intent(in) :: rhs
+!    eq_cis = real(lhs) == rhs
+!  end function eq_cis
+!  logical function eq_ics(lhs, rhs)
+!    integer, intent(in) :: lhs
+!    complex*8, intent(in) :: rhs
+!    eq_ics = lhs == real(rhs)
+!  end function eq_ics
+!  logical function eq_irs(lhs, rhs)
+!    integer, intent(in) :: lhs
+!    real*4, intent(in) :: rhs
+!    eq_irs = lhs == rhs
+!  end function eq_irs
+!  logical function eq_ris(lhs, rhs)
+!    real*4, intent(in) :: lhs
+!    integer, intent(in) :: rhs
+!    eq_ris = lhs == rhs
+!  end function eq_ris
+!  logical function eq_cdcs(lhs, rhs)
+!    complex*16, intent(in) :: lhs
+!    complex*8, intent(in) :: rhs
+!    eq_cdcs = real(lhs) == real(rhs)
+!  end function eq_cdcs
+!  logical function eq_cscd(lhs, rhs)
+!    complex*8, intent(in) :: lhs
+!    complex*16, intent(in) :: rhs
+!    eq_cscd = real(lhs) == real(rhs)
+!  end function eq_cscd
+!
+!! /=, .ne.
+!  logical function ne_cc(lhs, rhs)
+!    complex*16, intent(in) :: lhs, rhs
+!    ne_cc = real(lhs) /= real(rhs)
+!  end function ne_cc
+!  logical function ne_rr(lhs, rhs)
+!    real*8, intent(in) :: lhs, rhs
+!    ne_rr = lhs /= rhs
+!  end function ne_rr
+!  logical function ne_ii(lhs, rhs)
+!    integer, intent(in) :: lhs, rhs
+!    ne_ii = lhs /= rhs
+!  end function ne_ii
+!  logical function ne_aa(lhs, rhs)
+!    character(len=*), intent(in) :: lhs, rhs
+!    ne_aa = lhs /= rhs
+!  end function ne_aa
+!  logical function ne_cr(lhs, rhs)
+!    complex*16, intent(in) :: lhs
+!    real*8, intent(in) :: rhs
+!    ne_cr = real(lhs) /= rhs
+!  end function ne_cr
+!  logical function ne_rc(lhs, rhs)
+!    real*8, intent(in) :: lhs
+!    complex*16, intent(in) :: rhs
+!    ne_rc = lhs /= real(rhs)
+!  end function ne_rc
+!  logical function ne_ci(lhs, rhs)
+!    complex*16, intent(in) :: lhs
+!    integer, intent(in) :: rhs
+!    ne_ci = real(lhs) /= rhs
+!  end function ne_ci
+!  logical function ne_ic(lhs, rhs)
+!    integer, intent(in) :: lhs
+!    complex*16, intent(in) :: rhs
+!    ne_ic = lhs /= real(rhs)
+!  end function ne_ic
+!  logical function ne_ir(lhs, rhs)
+!    integer, intent(in) :: lhs
+!    real*8, intent(in) :: rhs
+!    ne_ir = lhs /= rhs
+!  end function ne_ir
+!  logical function ne_ri(lhs, rhs)
+!    real*8, intent(in) :: lhs
+!    integer, intent(in) :: rhs
+!    ne_ri = lhs /= rhs
+!  end function ne_ri
+!
+!  logical function ne_ccs(lhs, rhs)
+!    complex*8, intent(in) :: lhs, rhs
+!    ne_ccs = real(lhs) /= real(rhs)
+!  end function ne_ccs
+!  logical function ne_rrs(lhs, rhs)
+!    real*4, intent(in) :: lhs, rhs
+!    ne_rrs = lhs /= rhs
+!  end function ne_rrs
+!  logical function ne_crs(lhs, rhs)
+!    complex*8, intent(in) :: lhs
+!    real*4, intent(in) :: rhs
+!    ne_crs = real(lhs) /= rhs
+!  end function ne_crs
+!  logical function ne_rcs(lhs, rhs)
+!    real*4, intent(in) :: lhs
+!    complex*8, intent(in) :: rhs
+!    ne_rcs = lhs /= real(rhs)
+!  end function ne_rcs
+!  logical function ne_cis(lhs, rhs)
+!    complex*8, intent(in) :: lhs
+!    integer, intent(in) :: rhs
+!    ne_cis = real(lhs) /= rhs
+!  end function ne_cis
+!  logical function ne_ics(lhs, rhs)
+!    integer, intent(in) :: lhs
+!    complex*8, intent(in) :: rhs
+!    ne_ics = lhs /= real(rhs)
+!  end function ne_ics
+!  logical function ne_irs(lhs, rhs)
+!    integer, intent(in) :: lhs
+!    real*4, intent(in) :: rhs
+!    ne_irs = lhs /= rhs
+!  end function ne_irs
+!  logical function ne_ris(lhs, rhs)
+!    real*4, intent(in) :: lhs
+!    integer, intent(in) :: rhs
+!    ne_ris = lhs /= rhs
+!  end function ne_ris
+!  logical function ne_cdcs(lhs, rhs)
+!    complex*16, intent(in) :: lhs
+!    complex*8, intent(in) :: rhs
+!    ne_cdcs = real(lhs) /= real(rhs)
+!  end function ne_cdcs
+!  logical function ne_cscd(lhs, rhs)
+!    complex*8, intent(in) :: lhs
+!    complex*16, intent(in) :: rhs
+!    ne_cscd = real(lhs) /= real(rhs)
+!  end function ne_cscd  
+
+end module complexify

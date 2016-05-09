@@ -1,0 +1,10 @@
+        !COMPILER-GENERATED INTERFACE MODULE: Mon Mar 26 14:19:48 2012
+        MODULE INDEXX__genmod
+          INTERFACE 
+            SUBROUTINE INDEXX(N,ARRIN,INDX)
+              INTEGER(KIND=4), INTENT(IN) :: N
+              TYPE (XPLEX), INTENT(IN) :: ARRIN(N)
+              INTEGER(KIND=4), INTENT(OUT) :: INDX(N)
+            END SUBROUTINE INDEXX
+          END INTERFACE 
+        END MODULE INDEXX__genmod

@@ -1,0 +1,68 @@
+% $$$ STIRNCG: SUBSPACE TRUST REGION INTERIOR REFLECTIVE NEWTON-CG METHOD FOR BOUND
+% $$$          CONSTRAINED OPTIMIZATION PROBLEMS
+% $$$
+% $$$ Copyright and License information for STIRNCG  
+% $$$     STIRNCG is the subspace trust region interior reflective Newton-CG method
+% $$$
+% $$$     The following information is a copy of the License file in the STIRNCG
+% $$$     distribution.
+% $$$  
+% $$$  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% $$$  
+% $$$   STIRNCG, Copyright (c) 2007 by Tan Bui
+% $$$   All Rights Reserved. Massachusetts Institute of Technology
+% $$$   
+% $$$   STIRNCG License:
+% $$$   
+% $$$       Your use or distribution of STIRNCG or any modified version of
+% $$$       STIRNCG implies that you agree to this License.
+% $$$   
+% $$$       THIS MATERIAL IS PROVIDED AS IS, WITH ABSOLUTELY NO WARRANTY
+% $$$       EXPRESSED OR IMPLIED.  ANY USE IS AT YOUR OWN RISK.
+% $$$   
+% $$$       Permission is hereby granted to use or copy this program, provided
+% $$$       that the Copyright, this License, and the Availability of the original
+% $$$       version is retained on all copies.  User documentation of any code that
+% $$$       uses STIRNCG or any modified version of STIRNCG code must cite the
+% $$$       Copyright, this License, the Availability note, and "Used by permission."
+% $$$       Permission to modify the code and to distribute modified code is granted,
+% $$$       provided the Copyright, this License, and the Availability note are
+% $$$       retained, and a notice that the code was modified is included.  This
+% $$$       software was developed with support from the National Science Foundation,
+% $$$       and is provided to you free of charge.
+% $$$   
+% $$$   Availability:
+% $$$   
+% $$$       web.mit.edu/tanbui/Public/TRNCGcode/
+% $$$  
+% $$$   Main reference:
+% $$$
+% $$$   1. A Subspace, Interior, and Conjugate Gradient Method for Large-Scale 
+% $$$   Bound-Constrained Minimization Problems. SIAM Journal on Scientific
+% $$$   Computing, Volume 21 ,  Issue 1  (Aug.-Sept. 1999), Pages: 1 - 23
+% $$$ 
+% $$$   2. Numerical Optimization, by Nocedal and Wright
+% $$$
+% $$$   Bug report:
+% $$$   tanbui@alum.mit.edu or tansweet@gmail.com
+% $$$
+ %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+This is the README file for the 
+
+	SUBSPACE TRUST REGION INTERIOR REFLECTIVE NEWTON-CG METHOD FOR 
+                   BOUND-CONSTRAINED OPTIMIZATION PROBLEMS
+
+I) INSTALLATION:
+
+	gunzip STIRNCG.tar.gz
+	tar -xvf STIRNCG.tar
+	
+	The directory TRNCGcode will be generated
+
+II) USAGE:
+
+	Please read the Test.m file which is an example on how to use the code
+	
+

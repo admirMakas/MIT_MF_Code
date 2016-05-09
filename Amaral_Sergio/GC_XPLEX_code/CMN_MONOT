@@ -1,0 +1,10 @@
+! $Id: CMN_MONOT,v 1.1.1.1 2009/06/09 21:51:50 daven Exp $
+!
+!-----COMMON BLOCKS FOR MONOTERPENE
+!
+! (1 ) Changed RCS ID tag comment character from "C" to "!" to allow freeform
+!       compilation.  Updated comments, cosmetic changes. (bmy, 6/25/02)
+
+      ! Baseline emission
+      TYPE (XPLEX) BASEMONOT
+      COMMON /BDFMONOT/ BASEMONOT(MAXIJ,NTYPE)

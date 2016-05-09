@@ -1,0 +1,822 @@
+#=================================================================================
+# $Id: Makefile.ifort,v 1.29 2012/04/13 22:29:08 nicolas Exp $
+#
+# GEOS-Chem Makefile for LINUX/IFORT compiler (bmy, Wed Jan 28 15:09:07 2009)
+# 
+# New Structure Added for Organized Directory Structure (ksingh, Sat Jun 13,2009)
+# adj32_001: remove -mp flag, add -fp-model precise
+#=================================================================================
+SHELL = /bin/sh
+
+# IFORT compilation options
+FFLAGS = -cpp -w -O3 -auto -noalign -convert big_endian -fp-model precise -r8 
+#FFLAGS = -cpp -w -fp-stack-check -fpe0 -fp-model precise -fp-model double -g -r8 -convert big_endian -traceback
+ 
+# IFORT compilation options (for debugging: no optimization)
+#FFLAGS = -cpp -w -O3 -auto -noalign -convert big_endian -fp-model precise -g -traceback -CB -vec-report0
+
+# IFORT compilation options (for profiling: use 1 proc too)
+#FFLAGS = -cpp -w -noalign -convert big_endian -g -p
+
+# Compile command -- multiprocessor
+F90 = ifort $(FFLAGS) -openmp -Dmultitask
+
+#netCDF 
+#NetCDFLIB    = /usr/local/other/netcdf/3.6.2_intel-10.1.013/lib
+#NetCDFINC    = /usr/local/other/netcdf/3.6.2_intel-10.1.013/include
+#LIBS         = -L$(NetCDFLIB) -lnetcdf
+F90_netCDF   = ifort $(FFLAGS) -I$(NetCDFINC) -openmp -Dmultitask
+
+#(hml, 07/01/11, adj32_025)#####################################
+# netCDF
+ifndef NETCDF
+NETCDF = yes
+endif
+#NC_FFLAGS = # You may hardwire these if you choose
+#NC_FLIBS =  # Otherwise, they are set by a call to nc-config
+#ifeq ($(NETCDF),yes)
+ifndef NC_FFLAGS
+#NC_FFLAGS := $(shell nc-config --fflags | sed s/-g\ //)
+NC_FFLAGS := -g -I/data/share/include
+endif
+ifndef NC_FLIBS
+#NC_FLIBS := $(shell nc-config --flibs)
+NC_FLIBS := -I$(NetCDFINC) -I/mit/software/netcdf/HDF5/include -L/mit/software/netcdf/netcdf4/lib -lnetcdf -L/mit/software/netcdf/HDF5/lib -lhdf5_hl -L/mit/software/netcdf/HDF5/lib -lhdf5 -L/mit/software/netcdf/zlib/lib -lz -lm 
+#NC_FLIBS := -L/data/share/lib -lnetcdf -L/data/libraries/hdf5/serial/lib -lhdf5_hl -lhdf5 -L/data/libraries/zlib/serial/lib -lz -lm
+endif
+FFLAGS += $(NC_FFLAGS)
+LINK += $(NC_FLIBS)
+#endif
+#################################################################
+
+
+# Compile command -- single processor
+#F90 = ifort $(FFLAGS)
+
+VPATH = ./modified ./adjoint ./new ./obs_operators
+
+OBJSe =                       \
+ifort_errmsg.o
+
+OBJS =                        \
+CO_strat_pl.o                 \
+CO_strat_pl_adj.o             \
+airmas.o                      \
+anthroems.o                   \
+arsl1k.o                      \
+backsub.o                     \
+biofit.o                      \
+boxvl.o                       \
+calcrate.o                    \
+calcrate_adj.o                \
+chemdr.o                      \
+chemdr_adj.o                  \
+cleanup.o                     \
+cleanup_adj.o                 \
+decomp.o                      \
+diag1.o                       \
+diag3.o                       \
+diag_2pm.o                    \
+diagoh.o                      \
+emf_scale.o                   \
+emfossil.o                    \
+emisop.o                      \
+emisop_grass.o                \
+emisop_mb.o                   \
+emissdr.o                     \
+emmonot.o                     \
+fertadd.o                     \
+findmon.o                     \
+fyrno3.o                      \
+fyhoro.o                      \
+gasconc.o            	      \
+get_global_ch4.o              \
+getifsun.o                    \
+initialize.o                  \
+jsparse.o                     \
+ksparse.o                     \
+lump.o                        \
+lump_adj.o                    \
+ndxx_setup.o                  \
+ohsave.o                      \
+partition.o                   \
+partition_adj.o               \
+pderiv.o                      \
+physproc.o           	      \
+precipfrac.o                  \
+pulsing.o                     \
+rdisopt.o                     \
+rdlai.o                       \
+rdland.o                      \
+rdlight.o                     \
+rdmonot.o                     \
+rdsoil.o                      \
+readchem.o                    \
+reader.o                      \
+readlai.o                     \
+routines.o		      \
+ruralbox.o                    \
+schem.o                       \
+schem_adj.o                   \
+setbase.o                     \
+setemdep.o                    \
+setemis.o                     \
+setemis_adj.o                 \
+setmodel.o                    \
+sfcwindsqr.o                  \
+smvgear.o                     \
+soilbase.o                    \
+soilcrf.o                     \
+soilnoxems.o                  \
+soiltemp.o                    \
+soiltype.o                    \
+subfun.o                      \
+sunparam.o                    \
+tcorr.o                       \
+tpcore_fvdas_mod.o            \
+tropopause.o                  \
+update.o                      \
+xltmmp.o                      
+
+FJ =                          \
+BLKSLV.o                      \
+CLDSRF.o                      \
+EFOLD.o                       \
+FLINT.o                       \
+GAUSSP.o                      \
+GEN.o                         \
+fjx_acet_mod.o                \
+JRATET.o                      \
+JVALUE.o                      \
+LEGND0.o                      \
+MATIN4.o                      \
+MIESCT.o                      \
+NOABS.o                       \
+OPMIE.o                       \
+RD_TJPL.o                     \
+SPHERE.o                      \
+XSEC1D.o                      \
+XSECO2.o                      \
+XSECO3.o                      \
+fast_j.o                      \
+fjfunc.o                      \
+inphot.o                      \
+jv_index.o                    \
+mmran_16.o                    \
+photoj.o                      \
+rd_js.o                       \
+rd_prof.o                     \
+set_aer.o                     \
+set_prof.o                    
+
+MODS =                        \
+gckpp_adj_Precision.o         \
+MYTYPE.o                      \
+xplexify.o                  \
+fjx_acet_mod.o                \
+charpak_mod.o                 \
+error_mod.o                   \
+netcdf_util_mod.o             \
+logical_mod.o                 \
+directory_mod.o               \
+unix_cmds_mod.o               \
+tracer_mod.o         	      \
+julday_mod.o                  \
+file_mod.o                    \
+grid_mod.o                    \
+time_mod.o           	      \
+logical_adj_mod.o     	      \
+directory_adj_mod.o   	      \
+bpch2_mod.o          	      \
+regrid_1x1_mod.o              \
+pressure_mod.o       	      \
+transfer_mod.o                \
+future_emissions_mod.o        \
+lai_mod.o                     \
+tracerid_mod.o                \
+benchmark_mod.o               \
+comode_mod.o         	      \
+diag_mod.o                    \
+dao_mod.o                     \
+tropopause_mod.o              \
+partner_save_mod.o           \
+gckpp_adj_Parameters.o        \
+adj_arrays_mod.o      	      \
+gckpp_adj_Function.o  	      \
+gckpp_adj_Global.o            \
+gckpp_adj_Monitor.o           \
+gckpp_adj_Util.o              \
+gckpp_adj_HessianSP.o         \
+gckpp_adj_Hessian.o           \
+gckpp_adj_Initialize.o        \
+gckpp_adj_JacobianSP.o        \
+gckpp_adj_Jacobian.o          \
+gckpp_adj_LinearAlgebra.o     \
+gckpp_adj_Rates.o             \
+gckpp_adj_StoichiomSP.o       \
+gckpp_adj_Stoichiom.o         \
+gckpp_adj_Integrator.o        \
+gckpp_adj_Model.o             \
+checkpoint_mod.o      	      \
+pbl_mix_mod.o        	      \
+pbl_mix_adj_mod.o     	      \
+diag03_mod.o                  \
+diag04_mod.o                  \
+diag41_mod.o                  \
+diag42_mod.o                  \
+diag48_mod.o                  \
+diag49_mod.o                  \
+diag50_mod.o                  \
+diag51_mod.o                  \
+diag56_mod.o                  \
+diag59_mod.o                  \
+diag_oh_mod.o                 \
+diag_pl_mod.o                 \
+ocean_mercury_mod.o           \
+drydep_mod.o                  \
+scale_anthro_mod.o            \
+edgar_mod.o                   \
+bravo_mod.o                   \
+emep_mod.o                    \
+nei2005_anthro_mod.o          \
+epa_nei_mod.o                 \
+streets_anthro_mod.o          \
+arctas_ship_emiss_mod.o       \
+cac_anthro_mod.o              \
+vistas_anthro_mod.o           \
+geia_mod.o                    \
+global_oh_mod.o               \
+global_ch4_mod.o              \
+global_ch4_adj_mod.o          \
+global_hno3_mod.o             \
+global_no3_mod.o              \
+global_nox_mod.o              \
+global_o1d_mod.o              \
+global_o3_mod.o               \
+uvalbedo_mod.o                \
+RnPbBe_mod.o                  \
+Kr85_mod.o                    \
+acetone_mod.o                 \
+aerosol_mod.o                 \
+aircraft_mod.o                \
+aircraft_adj_mod.o            \
+biofuel_mod.o                 \
+gc_biomass_mod.o              \
+gfed2_biomass_mod.o           \
+biomass_mod.o                 \
+c2h6_mod.o                    \
+ch3i_mod.o                    \
+a3_read_mod.o                 \
+a6_read_mod.o                 \
+i6_read_mod.o                 \
+gcap_read_mod.o               \
+gwet_read_mod.o               \
+xtra_read_mod.o               \
+megan_mod.o                   \
+carbon_mod.o                  \
+carbon_adj_mod.o              \
+optdepth_mod.o                \
+planeflight_mod.o             \
+restart_mod.o        	      \
+checkpt_mod.o         	      \
+population_mod.o              \
+lightning_nox_mod.o           \
+rpmares_mod.o                 \
+rpmares_adj_mod.o             \
+isoropia_mod.o                \
+wetscav_mod.o        	      \
+wetscav_adj_mod.o             \
+seasalt_mod.o                 \
+sulfate_mod.o                 \
+sulfate_adj_mod.o             \
+hcn_ch3cn_mod.o               \
+tagged_co_mod.o               \
+tagged_co_adj_mod.o           \
+tagged_ox_mod.o               \
+tagged_ox_adj_mod.o           \
+h2_hd_mod.o                   \
+gcap_convect_mod.o            \
+fvdas_convect_mod.o           \
+convection_mod.o              \
+fvdas_convect_adj_mod.o       \
+convection_adj_mod.o          \
+pjc_pfix_mod.o                \
+pjc_pfix_geos5_window_mod.o   \
+dust_dead_mod.o               \
+dust_mod.o                    \
+dust_adj_mod.o                \
+co2_mod.o                     \
+co2_adj_mod.o                 \
+mercury_mod.o                 \
+toms_mod.o                    \
+tpcore_bc_mod.o               \
+tpcore_fvdas_mod.o            \
+tpcore_mod.o                  \
+tpcore_window_mod.o           \
+tpcore_geos5_window_mod.o     \
+transport_mod.o      	      \
+linoz_mod.o		      \
+linoz_adj_mod.o	      	      \
+upbdflx_adj_mod.o     	      \
+upbdflx_mod.o        	      \
+strat_chem_mod.o              \
+strat_chem_adj_mod.o          \
+chemistry_mod.o               \
+chemistry_adj_mod.o           \
+emissions_mod.o               \
+emissions_adj_mod.o           \
+gamap_mod.o                   \
+input_mod.o                   \
+improve_bc_mod.o              \
+partner_extra_mod.o           \
+geos_chem_mod.o      	      \
+ErrorModule.o                 \
+sciabr_co_obs_mod.o           \
+tes_ch4_mod.o                 \
+mem_ch4_mod.o                 \
+leo_ch4_mod.o                 \
+geocape_ch4_mod.o             \
+geos_chem_adj_mod.o           \
+inv_hessian_mod.o             \
+input_adj_mod.o       	      \
+inverse_mod.o	      	      \
+inverse_driver.o       
+
+#=============================================================================
+#  Executables and Documentation
+#=============================================================================
+geos:   $(MODS) $(OBJS) $(OBJSe) $(FJ)      
+	$(F90)  $(MODS) $(OBJS)  $(OBJSe) $(FJ) $(LINK) -o geos
+
+#	$(F90)  *.o -o geos
+#	$(F90)  $(MODS) $(OBJS)  $(OBJSe) $(FJ) -o geos
+
+# Build GEOS-Chem documenation w/ ProTeX
+doc:
+	@$(MAKE) -C doc all
+
+# Remove all *.tex, *.ps, and *.pdf files from the doc subdirectory
+docclean: 
+	@$(MAKE) -C doc clean
+
+#==============================================================================
+#  Dependencies Listing
+#==============================================================================
+MYTYPE.o                       : MYTYPE.f90
+xplexify.o                     : xplexify.f90
+BLKSLV.o                       : BLKSLV.f                       jv_mie.h 
+CLDSRF.o                       : CLDSRF.f                       cmn_fj.h CMN_SIZE define.h jv_cmn.h 
+CO_strat_pl.o                  : CO_strat_pl.f                  CMN_SIZE define.h 
+EFOLD.o                        : EFOLD.f                        
+FLINT.o                        : FLINT.f                        
+GAUSSP.o                       : GAUSSP.f                       
+GEN.o                          : GEN.f                          jv_mie.h 
+fjx_acet_mod.o                 : fjx_acet_mod.f                 cmn_fj.h jv_cmn.h
+JRATET.o                       : JRATET.f                       cmn_fj.h CMN_SIZE define.h jv_cmn.h 
+JVALUE.o                       : JVALUE.f                       cmn_fj.h CMN_SIZE define.h jv_cmn.h 
+Kr85_mod.o                     : Kr85_mod.f                     CMN_DIAG CMN_O3 CMN_SIZE define.h define.h 
+LEGND0.o                       : LEGND0.f                       
+MATIN4.o                       : MATIN4.f                       
+MIESCT.o                       : MIESCT.f                       jv_mie.h 
+NOABS.o                        : NOABS.f                        
+OPMIE.o                        : OPMIE.f                        cmn_fj.h CMN_SIZE define.h jv_cmn.h jv_mie.h 
+RD_TJPL.o                      : RD_TJPL.f                      cmn_fj.h CMN_SIZE define.h jv_cmn.h 
+RnPbBe_mod.o                   : RnPbBe_mod.f                   CMN_DEP CMN_DIAG CMN_SIZE define.h define.h 
+SPHERE.o                       : SPHERE.f                       cmn_fj.h CMN_SIZE define.h jv_cmn.h 
+XSEC1D.o                       : XSEC1D.f                       cmn_fj.h CMN_SIZE define.h jv_cmn.h 
+XSECO2.o                       : XSECO2.f                       cmn_fj.h CMN_SIZE define.h jv_cmn.h 
+XSECO3.o                       : XSECO3.f                       cmn_fj.h CMN_SIZE define.h jv_cmn.h 
+aerosol_mod.o                  : aerosol_mod.f                  CMN_DIAG CMN_SIZE define.h cmn_fj.h CMN_SIZE define.h comode.h jv_cmn.h 
+#aircraft_mod.o                 : aircraft_mod.f             CMN CMN_DIAG CMN_SIZE define.h 
+airmas.o                       : airmas.f                       
+anthroems.o                    : anthroems.f                    CMN_O3 CMN_SIZE define.h comode.h 
+arctas_ship_emiss_mod.o        : arctas_ship_emiss_mod.f        CMN_SIZE define.h 
+arsl1k.o                       : arsl1k.f                       
+backsub.o                      : backsub.f                      CMN_SIZE define.h comode.h 
+benchmark_mod.o                : benchmark_mod.f                CMN_SIZE define.h 
+biofit.o                       : biofit.f                       CMN_DEP CMN_SIZE define.h 
+biofuel_mod.o                  : biofuel_mod.f                  CMN_DIAG CMN_O3 CMN_SIZE define.h 
+biomass_mod.o                  : biomass_mod.f                  CMN_DIAG CMN_SIZE define.h 
+boxvl.o                        : boxvl.f                        
+bravo_mod.o                    : bravo_mod.f                    CMN_O3 CMN_SIZE define.h 
+c2h6_mod.o                     : c2h6_mod.f                     CMN CMN_DIAG CMN_O3 CMN_SIZE define.h 
+cac_anthro_mod.o               : cac_anthro_mod.f               CMN_O3 CMN_SIZE define.h 
+ch3i_mod.o                     : ch3i_mod.f                     CMN_DEP CMN_DIAG CMN_SIZE define.h comode.h 
+charpak_mod.o                  : charpak_mod.f                  
+cleanup.o                      : cleanup.f                  
+comode_mod.o                   : comode_mod.f                   CMN_SIZE define.h comode.h 
+decomp.o                       : decomp.f                       CMN_SIZE define.h comode.h 
+diag03_mod.o                   : diag03_mod.f                   CMN_DIAG CMN_SIZE define.h 
+diag04_mod.o                   : diag04_mod.f                   CMN_DIAG CMN_SIZE define.h 
+diag1.o                        : diag1.f                        CMN_DIAG CMN_GCTM CMN_O3 CMN_SIZE define.h 
+diag3.o                        : diag3.f                        CMN CMN_DIAG CMN_O3 CMN_SIZE define.h comode.h 
+diag41_mod.o                   : diag41_mod.f                   CMN_DIAG CMN_SIZE define.h 
+diag42_mod.o                   : diag42_mod.f                   CMN_DIAG CMN_SIZE define.h 
+diag48_mod.o                   : diag48_mod.f                   CMN_GCTM CMN_O3 CMN_SIZE define.h cmn_fj.h CMN_SIZE define.h jv_cmn.h 
+diag49_mod.o                   : diag49_mod.f                   CMN_GCTM CMN_O3 CMN_SIZE define.h cmn_fj.h CMN_SIZE define.h jv_cmn.h 
+diag50_mod.o                   : diag50_mod.f                   CMN_GCTM CMN_O3 CMN_SIZE define.h cmn_fj.h CMN_SIZE define.h jv_cmn.h 
+diag51_mod.o                   : diag51_mod.f                   CMN_GCTM CMN_O3 CMN_SIZE define.h cmn_fj.h CMN_SIZE define.h jv_cmn.h 
+diag56_mod.o                   : diag56_mod.f                   CMN_DIAG CMN_SIZE define.h 
+diag59_mod.o                   : diag59_mod.f                   CMN_DIAG CMN_SIZE define.h 
+diag_2pm.o                     : diag_2pm.f                     CMN_DIAG CMN_SIZE define.h 
+diag_mod.o                     : diag_mod.f                     
+diag_oh_mod.o                  : diag_oh_mod.f                  CMN_SIZE define.h comode.h 
+diag_pl_mod.o                  : diag_pl_mod.f                  CMN_DIAG CMN_SIZE define.h comode.h 
+diagoh.o                       : diagoh.f                       CMN_DIAG CMN_O3 CMN_SIZE define.h 
+directory_mod.o                : directory_mod.f                
+drydep_mod.o                   : drydep_mod.f                   CMN_DEP CMN_DIAG CMN_GCTM CMN_SIZE define.h CMN_VEL commsoil.h comode.h 
+dust_dead_mod.o                : dust_dead_mod.f                CMN_GCTM CMN_SIZE define.h 
+edgar_mod.o                    : edgar_mod.f                    CMN_SIZE define.h 
+emep_mod.o                     : emep_mod.f                     CMN_O3 CMN_SIZE define.h 
+nei2005_anthro_mod.o           : nei2005_anthro_mod.f           CMN_O3 CMN_SIZE define.h 
+emf_scale.o                    : emf_scale.f                    CMN_O3 CMN_SIZE define.h comode.h 
+emfossil.o                     : emfossil.f                     CMN_DIAG CMN_O3 CMN_SIZE define.h comode.h 
+emisop.o                       : emisop.f                       CMN_ISOP CMN_SIZE define.h CMN_VEL 
+emisop_grass.o                 : emisop_grass.f                 CMN_ISOP CMN_SIZE define.h CMN_VEL 
+emisop_mb.o                    : emisop_mb.f                    CMN_ISOP CMN_SIZE define.h CMN_VEL 
+emissdr.o                      : emissdr.f                      CMN CMN_DIAG CMN_MONOT CMN_NOX CMN_O3 CMN_SIZE define.h comode.h 
+emissions_mod.o                : emissions_mod.f                CMN_O3 CMN_SIZE define.h 
+emmonot.o                      : emmonot.f                      CMN_MONOT CMN_SIZE define.h CMN_VEL 
+epa_nei_mod.o                  : epa_nei_mod.f                  CMN_O3 CMN_SIZE define.h 
+error_mod.o                    : error_mod.f                    define.h 
+fast_j.o                       : fast_j.f                       cmn_fj.h CMN_SIZE define.h jv_cmn.h 
+fertadd.o                      : fertadd.f                      CMN_SIZE define.h commsoil.h 
+file_mod.o                     : file_mod.f                     define.h 
+findmon.o                      : findmon.f                      
+fjfunc.o                       : fjfunc.f                       cmn_fj.h CMN_SIZE define.h 
+future_emissions_mod.o         : future_emissions_mod.f         CMN_SIZE define.h 
+fvdas_convect_mod.o            : fvdas_convect_mod.f            CMN_DIAG CMN_SIZE define.h 
+fyrno3.o                       : fyrno3.f                       
+fyhoro.o                       : fyhoro.f  
+gc_biomass_mod.o               : gc_biomass_mod.f               CMN_SIZE define.h 
+gcap_convect_mod.o             : gcap_convect_mod.f             CMN_DIAG CMN_SIZE define.h 
+gcap_read_mod.o                : gcap_read_mod.f                CMN_DIAG CMN_GCTM CMN_SIZE define.h 
+geia_mod.o                     : geia_mod.f                     CMN_SIZE define.h 
+get_global_ch4.o               : get_global_ch4.f               
+getifsun.o                     : getifsun.f                     CMN_SIZE define.h comode.h 
+gfed2_biomass_mod.o            : gfed2_biomass_mod.f            CMN_SIZE define.h 
+global_hno3_mod.o              : global_hno3_mod.f              CMN_SIZE define.h 
+global_no3_mod.o               : global_no3_mod.f               CMN_SIZE define.h 
+global_nox_mod.o               : global_nox_mod.f               CMN_SIZE define.h 
+global_o1d_mod.o               : global_o1d_mod.f               CMN_SIZE define.h 
+global_o3_mod.o                : global_o3_mod.f                CMN_SIZE define.h 
+h2_hd_mod.o                    : h2_hd_mod.f                    CMN_DEP CMN_DIAG CMN_O3 CMN_SIZE define.h 
+hcn_ch3cn_mod.o                : hcn_ch3cn_mod.f                CMN_DEP CMN_DIAG CMN_SIZE define.h 
+ifort_errmsg.o                 : ifort_errmsg.f                 
+initialize.o                   : initialize.f                   CMN_DIAG CMN_SIZE define.h 
+inphot.o                       : inphot.f                       cmn_fj.h CMN_SIZE define.h jv_cmn.h 
+isoropia_mod.o                 : isoropia_mod.f                 CMN_SIZE define.h isoropia.h 
+jsparse.o                      : jsparse.f                      CMN_SIZE define.h comode.h 
+jv_index.o                     : jv_index.f                     cmn_fj.h CMN_SIZE define.h comode.h 
+ksparse.o                      : ksparse.f                      CMN_SIZE define.h comode.h 
+lai_mod.o                      : lai_mod.f                      CMN_SIZE define.h 
+logical_mod.o                  : logical_mod.f                  
+lump.o                         : lump.f                         CMN_SIZE define.h comode.h 
+main.o                         : main.f                         CMN_DIAG CMN_GCTM CMN_SIZE define.h 
+mercury_mod.o                  : mercury_mod.f                  CMN_DIAG CMN_GCTM CMN_SIZE define.h 
+mmran_16.o                     : mmran_16.f                     cmn_fj.h CMN_SIZE define.h jv_cmn.h 
+ndxx_setup.o                   : ndxx_setup.f                   CMN_DIAG CMN_SIZE define.h 
+ocean_mercury_mod.o            : ocean_mercury_mod.f            CMN_DEP CMN_SIZE define.h 
+ohsave.o                       : ohsave.f                       CMN_SIZE define.h comode.h 
+optdepth_mod.o                 : optdepth_mod.f                 CMN_DIAG CMN_SIZE define.h 
+pderiv.o                       : pderiv.f                       CMN_SIZE define.h comode.h 
+pjc_pfix_mod.o                 : pjc_pfix_mod.f                 CMN CMN_GCTM CMN_SIZE define.h 
+planeflight_mod.o              : planeflight_mod.f              CMN_DIAG CMN_SIZE define.h cmn_fj.h CMN_SIZE define.h comode.h jv_cmn.h 
+precipfrac.o                   : precipfrac.f                   CMN_SIZE define.h 
+pulsing.o                      : pulsing.f                      CMN_SIZE define.h commsoil.h 
+rd_js.o                        : rd_js.f                        cmn_fj.h CMN_SIZE define.h jv_cmn.h 
+rd_prof.o                      : rd_prof.f                      cmn_fj.h CMN_SIZE define.h jv_cmn.h 
+rdisopt.o                      : rdisopt.f                      CMN_SIZE define.h 
+rdlai.o                        : rdlai.f                        CMN_DEP CMN_SIZE define.h CMN_VEL 
+rdland.o                       : rdland.f                       CMN_DEP CMN_SIZE define.h CMN_VEL 
+rdlight.o                      : rdlight.f                      CMN_ISOP CMN_SIZE define.h 
+rdmonot.o                      : rdmonot.f                      CMN_SIZE define.h 
+rdsoil.o                       : rdsoil.f                       CMN_SIZE define.h commsoil.h 
+readchem.o                     : readchem.f                     CMN_SIZE define.h comode.h 
+reader.o                       : reader.f                       CMN_GCTM CMN_SIZE define.h comode.h 
+readlai.o                      : readlai.f                      CMN_DEP CMN_SIZE define.h CMN_VEL 
+regrid_1x1_mod.o               : regrid_1x1_mod.f               CMN_GCTM CMN_SIZE define.h 
+ruralbox.o                     : ruralbox.f                     CMN_SIZE define.h comode.h 
+scale_anthro_mod.o             : scale_anthro_mod.f             CMN_SIZE define.h 
+schem.o                        : schem.f                        CMN_SIZE define.h 
+seasalt_mod.o                  : seasalt_mod.f                  CMN_DIAG CMN_GCTM CMN_SIZE define.h 
+set_aer.o                      : set_aer.f                      cmn_fj.h CMN_SIZE define.h jv_cmn.h 
+setbase.o                      : setbase.f                      CMN CMN_ISOP CMN_MONOT CMN_SIZE define.h CMN_VEL 
+setemdep.o                     : setemdep.f                     CMN_SIZE define.h comode.h 
+setmodel.o                     : setmodel.f                     CMN_SIZE define.h comode.h 
+sfcwindsqr.o                   : sfcwindsqr.f                   CMN_SIZE define.h 
+smvgear.o                      : smvgear.f                      CMN_SIZE define.h comode.h 
+soilbase.o                     : soilbase.f                     CMN_SIZE define.h commsoil.h 
+soilcrf.o                      : soilcrf.f                      CMN_DEP CMN_SIZE define.h commsoil.h 
+soiltemp.o                     : soiltemp.f                     CMN_SIZE define.h commsoil.h 
+soiltype.o                     : soiltype.f                     CMN_SIZE define.h commsoil.h 
+streets_anthro_mod.o           : streets_anthro_mod.f           CMN_O3 CMN_SIZE define.h 
+subfun.o                       : subfun.f                       CMN_SIZE define.h comode.h 
+sunparam.o                     : sunparam.f                     
+tcorr.o                        : tcorr.f                        
+toms_mod.o                     : toms_mod.f                     CMN_SIZE define.h 
+tpcore_bc_mod.o                : tpcore_bc_mod.f                CMN CMN_SIZE define.h 
+tpcore_fvdas_mod.o             : tpcore_fvdas_mod.f90             CMN_GCTM 
+	$(F90) -c -r8 $*.f90
+tpcore_mod.o                   : tpcore_mod.f                   CMN_DIAG CMN_GCTM CMN_SIZE define.h define.h 
+	$(F90) -c -r8 $*.f
+tpcore_window_mod.o            : tpcore_window_mod.f            CMN_DIAG CMN_GCTM CMN_SIZE define.h define.h 
+	$(F90) -c -r8 $*.f
+tracerid_mod.o                 : tracerid_mod.f                 CMN_SIZE define.h comode.h 
+transfer_mod.o                 : transfer_mod.f                 CMN_SIZE define.h 
+tropopause.o                   : tropopause.f                   CMN CMN_DIAG CMN_SIZE define.h 
+tropopause_mod.o               : tropopause_mod.f               CMN CMN_SIZE define.h comode.h 
+unix_cmds_mod.o                : unix_cmds_mod.f                
+update.o                       : update.f                       CMN_SIZE define.h comode.h 
+uvalbedo_mod.o                 : uvalbedo_mod.f                 CMN_SIZE define.h 
+vistas_anthro_mod.o            : vistas_anthro_mod.f            CMN_O3 CMN_SIZE define.h 
+xltmmp.o                       : xltmmp.f                       CMN_SIZE define.h 
+xtra_read_mod.o                : xtra_read_mod.f                CMN_DIAG CMN_SIZE define.h 
+
+#------------------------------------------------------------------------------
+#	          MODIFIED FOR ORGANIZED DIRECTORY STRUCTURE
+#------------------------------------------------------------------------------
+
+#========================
+# ADJOINT DIRECTORY FILES
+#========================
+
+adj_arrays_mod.o               : adj_arrays_mod.f               define_adj.h define.h CMN_SIZE comode.h
+	$(F90) -c -r8 adjoint/adj_arrays_mod.f
+partner_save_mod.o             : partner_save_mod.f             CMN CMN_DIAG CMN_SIZE define.h comode.h
+	$(F90_netCDF) -c -r8 adjoint/partner_save_mod.f
+partner_extra_mod.o             : partner_extra_mod.f             CMN CMN_DIAG CMN_SIZE define.h comode.h
+	$(F90_netCDF) -c -r8 adjoint/partner_extra_mod.f
+aircraft_adj_mod.o             : aircraft_adj_mod.f             CMN CMN_DIAG CMN_SIZE define.h
+	$(F90) -c -r8 adjoint/aircraft_adj_mod.f
+calcrate_adj.o                 : calcrate_adj.f                 CMN CMN_DIAG CMN_SIZE define.h comode.h 
+	$(F90) -c -r8 adjoint/calcrate_adj.f
+carbon_adj_mod.o               : carbon_adj_mod.f               CMN CMN_DIAG CMN_GCTM CMN_O3 CMN_SIZE define.h comode.h 
+	$(F90) -c -r8 adjoint/carbon_adj_mod.f
+checkpoint_mod.o               : checkpoint_mod.f               define.h
+	$(F90) -c -r8 adjoint/checkpoint_mod.f
+checkpt_mod.o                  : checkpt_mod.f                  CMN_SIZE comode.h CMN_VEL define.h CMN_DEP
+	$(F90) -c -r8 adjoint/checkpt_mod.f
+chemdr_adj.o                   : chemdr_adj.f                   CMN CMN_DEP CMN_DIAG CMN_NOX CMN_O3 CMN_SIZE define.h comode.h
+	$(F90) -c -r8 adjoint/chemdr_adj.f           
+chemistry_adj_mod.o            : chemistry_adj_mod.f            gckpp_adj_Global.f90 gckpp_adj_Rates.f90 gckpp_adj_Integrator.f90 CMN_DIAG CMN_SIZE define.h comode.h 
+	$(F90) -c -r8 adjoint/chemistry_adj_mod.f
+cleanup_adj.o                  : cleanup_adj.f                  
+	$(F90) -c -r8 adjoint/cleanup_adj.f
+co2_adj_mod.o                  : co2_adj_mod.f                      CMN_SIZE define.h
+	$(F90) -c -r8 adjoint/co2_adj_mod.f 
+CO_strat_pl_adj.o              : CO_strat_pl_adj.f              CMN_SIZE define.h 
+	$(F90) -c -r8 adjoint/CO_strat_pl_adj.f
+convection_adj_mod.o           : convection_adj_mod.f           CMN_DIAG CMN_SIZE define.h define.h 
+	$(F90) -c -r8 adjoint/convection_adj_mod.f 
+directory_adj_mod.o            : directory_adj_mod.f
+	$(F90) -c -r8 adjoint/directory_adj_mod.f
+dust_adj_mod.o                 : dust_adj_mod.f                 CMN_DIAG CMN_GCTM CMN_SIZE define.h define_adj.h
+	$(F90) -c -r8 adjoint/dust_adj_mod.f
+emissions_adj_mod.o            : emissions_adj_mod.f            CMN_O3 CMN_SIZE define.h
+	$(F90) -c -r8 adjoint/emissions_adj_mod.f 
+fvdas_convect_adj_mod.o        : fvdas_convect_adj_mod.f        CMN_DIAG CMN_SIZE define.h 
+	$(F90) -c -r8 adjoint/fvdas_convect_adj_mod.f
+global_ch4_adj_mod.o           : global_ch4_adj_mod.f           CMN CMN_GCTM CMN_DIAG CMN_SIZE define.h
+	$(F90) -c -r8 $<
+geos_chem_adj_mod.o            : geos_chem_adj_mod.f        CMN_O3 CMN_GCTM CMN_DIAG CMN_SIZE define.h comode.h define_adj.h
+	$(F90) -c -r8 adjoint/geos_chem_adj_mod.f
+input_adj_mod.o                : input_adj_mod.f                CMN CMN_DIAG CMN_O3 CMN_SIZE define.h define_adj.h 
+	$(F90) -c -r8 adjoint/input_adj_mod.f      
+inv_hessian_mod.o              : inv_hessian_mod.f              CMN_SIZE define_adj.h
+	$(F90) -c -r8 adjoint/inv_hessian_mod.f
+inverse_driver.o               : inverse_driver.f               define_adj.h
+	$(F90) -c -r8 adjoint/inverse_driver.f
+inverse_mod.o                  : inverse_mod.f	      	   define_adj.h define.h
+	$(F90) -c -r8 adjoint/inverse_mod.f
+linoz_adj_mod.o                : linoz_adj_mod.f                CMN CMN_DIAG CMN_O3 CMN_SIZE define.h linoz.com 
+	$(F90) -c -r8 adjoint/linoz_adj_mod.f
+logical_adj_mod.o              : logical_adj_mod.f
+	$(F90) -c -r8 adjoint/logical_adj_mod.f
+lump_adj.o                     : lump_adj.f                     CMN_SIZE define.h comode.h 
+	$(F90) -c -r8 adjoint/lump_adj.f
+gckpp_adj_Precision.o	       : gckpp_adj_Precision.f90
+	$(F90) -c -r8 adjoint/gckpp_adj_Precision.f90
+gckpp_adj_Parameters.o	       : gckpp_adj_Parameters.f90 gckpp_adj_Precision.f90
+	$(F90) -c -r8 adjoint/gckpp_adj_Parameters.f90
+gckpp_adj_Global.o	       : gckpp_adj_Global.f90
+	$(F90) -c -r8 adjoint/gckpp_adj_Global.f90
+gckpp_adj_LinearAlgebra.o      : gckpp_adj_LinearAlgebra.f90 gckpp_adj_Parameters.f90 gckpp_adj_JacobianSP.f90
+	$(F90) -c -r8 adjoint/gckpp_adj_LinearAlgebra.f90
+gckpp_adj_Monitor.o	       : gckpp_adj_Monitor.f90
+	$(F90) -c -r8 adjoint/gckpp_adj_Monitor.f90
+gckpp_adj_Initialize.o         : gckpp_adj_Initialize.f90 gckpp_adj_Parameters.f90 gckpp_adj_Global.f90 gckpp_adj_Util.f90
+	$(F90) -c -r8 adjoint/gckpp_adj_Initialize.f90
+gckpp_adj_JacobianSP.o         : gckpp_adj_JacobianSP.f90
+	$(F90) -c -r8 adjoint/gckpp_adj_JacobianSP.f90
+gckpp_adj_Function.o           : gckpp_adj_Function.f90 gckpp_adj_Parameters.f90
+	$(F90) -c -r8 adjoint/gckpp_adj_Function.f90
+gckpp_adj_Jacobian.o           : gckpp_adj_Jacobian.f90 gckpp_adj_Parameters.f90 gckpp_adj_JacobianSP.f90
+	$(F90) -c -r8 adjoint/gckpp_adj_Jacobian.f90
+gckpp_adj_HessianSP.o          : gckpp_adj_HessianSP.f90 
+	$(F90) -c -r8 adjoint/gckpp_adj_HessianSP.f90
+gckpp_adj_Hessian.o            : gckpp_adj_Hessian.f90 gckpp_adj_Parameters.f90 gckpp_adj_HessianSP.f90
+	$(F90) -c -r8 adjoint/gckpp_adj_Hessian.f90
+gckpp_adj_Util.o               : gckpp_adj_Util.f90 gckpp_adj_Parameters.f90 gckpp_adj_Global.f90
+	$(F90) -c -r8 adjoint/gckpp_adj_Util.f90
+gckpp_adj_StoichiomSP.o        : gckpp_adj_StoichiomSP.f90
+	$(F90) -c -r8 adjoint/gckpp_adj_StoichiomSP.f90
+gckpp_adj_Stoichiom.o	       : gckpp_adj_Stoichiom.f90 gckpp_adj_Parameters.f90 gckpp_adj_StoichiomSP.f90
+	$(F90) -c -r8 adjoint/gckpp_adj_Stoichiom.f90
+gckpp_adj_Rates.o	       : gckpp_adj_Rates.f90 gckpp_adj_Parameters.f90 gckpp_adj_Global.f90
+	$(F90) -c -r8 adjoint/gckpp_adj_Rates.f90
+gckpp_adj_Model.o	       : gckpp_adj_Model.f90
+	$(F90) -c -r8 adjoint/gckpp_adj_Model.f90
+gckpp_adj_Integrator.o	       : gckpp_adj_Integrator.f90 gckpp_adj_Parameters.f90 gckpp_adj_Precision.f90 gckpp_adj_Global.f90 gckpp_adj_LinearAlgebra.f90 gckpp_adj_Rates.f90 gckpp_adj_Function.f90 gckpp_adj_Jacobian.f90 gckpp_adj_Hessian.f90 gckpp_adj_Util.f90
+	$(F90) -c -r8 adjoint/gckpp_adj_Integrator.f90
+partition_adj.o                : partition_adj.f                CMN_SIZE define.h comode.h 
+	$(F90) -c -r8 adjoint/partition_adj.f 
+pbl_mix_adj_mod.o              : pbl_mix_adj_mod.f              CMN_DIAG CMN_GCTM CMN_SIZE define.h 
+	$(F90) -c -r8 adjoint/pbl_mix_adj_mod.f
+rpmares_adj_mod.o              : rpmares_adj_mod.f              CMN_SIZE define.h 
+	$(F90) -c -extend_source -r8 adjoint/rpmares_adj_mod.f
+schem_adj.o                    : schem_adj.f                    CMN_SIZE define.h 
+	$(F90) -c -r8 adjoint/schem_adj.f
+setemis_adj.o                  : setemis_adj.f                  CMN_O3   CMN_NOX CMN_SIZE define.h comode.h 
+	$(F90) -c -r8 adjoint/setemis_adj.f     
+sulfate_adj_mod.o              : sulfate_adj_mod.f              CMN_GCTM CMN_O3 CMN_SIZE define.h cmn_fj.h CMN_SIZE define.h 
+	$(F90) -c -r8 adjoint/sulfate_adj_mod.f
+strat_chem_adj_mod.o           : strat_chem_adj_mod.f           CMN_SIZE
+	$(F90) -c -r8 adjoint/strat_chem_adj_mod.f
+tagged_co_adj_mod.o            : tagged_co_adj_mod.f            CMN_DIAG CMN_O3 CMN_SIZE define.h
+	$(F90) -c -r8 adjoint/tagged_co_adj_mod.f
+tagged_ox_adj_mod.o            : tagged_ox_adj_mod.f            CMN_DIAG CMN_O3 CMN_SIZE define.h define_adj.h
+	$(F90) -c -r8 adjoint/tagged_ox_adj_mod.f
+upbdflx_adj_mod.o              : upbdflx_adj_mod.f              CMN_GCTM CMN_SIZE define.h define_adj.h
+	$(F90) -c -r8 adjoint/upbdflx_adj_mod.f
+wetscav_adj_mod.o              : wetscav_adj_mod.f              CMN_DIAG CMN_SIZE define.h
+	$(F90) -c -r8 adjoint/wetscav_adj_mod.f
+
+
+#=========================
+# MODIFIED DIRECTORY FILES
+#=========================
+aircraft_mod.o                 : aircraft_mod.f                 CMN CMN_DIAG CMN_SIZE define.h
+	$(F90) -c -r8 modified/aircraft_mod.f
+a3_read_mod.o                  : a3_read_mod.f                  CMN_DIAG CMN_SIZE define.h 
+	$(F90) -c -r8 modified/a3_read_mod.f
+a6_read_mod.o                  : a6_read_mod.f                  CMN_DIAG CMN_GCTM CMN_SIZE define.h 
+	$(F90) -c -r8 modified/a6_read_mod.f
+acetone_mod.o                  : acetone_mod.f                  CMN_DEP CMN_DIAG CMN_MONOT CMN_SIZE define.h 
+	$(F90) -c     modified/acetone_mod.f
+bpch2_mod.o                    : bpch2_mod.f                    CMN_SIZE define.h define.h
+	$(F90) -c -r8 modified/bpch2_mod.f
+calcrate.o                     : calcrate.f                     CMN CMN_DIAG CMN_SIZE define.h comode.h 
+	$(F90) -c -r8 modified/calcrate.f
+carbon_mod.o                   : carbon_mod.f                   CMN CMN_DIAG CMN_GCTM CMN_O3 CMN_SIZE define.h comode.h 
+	$(F90) -c -r8 modified/carbon_mod.f
+chemdr.o                       : chemdr.f                       CMN CMN_DEP CMN_DIAG CMN_NOX CMN_O3 CMN_SIZE define.h comode.h define_adj.h
+	$(F90) -c -r8 modified/chemdr.f
+chemistry_mod.o                : chemistry_mod.f                gckpp_adj_Global.f90 gckpp_adj_Rates.f90 gckpp_adj_Integrator.f90 CMN_DIAG CMN_SIZE define.h comode.h 
+	$(F90) -c -r8 modified/chemistry_mod.f
+co2_mod.o                      : co2_mod.f                      CMN_SIZE define.h
+	$(F90) -c -r8 modified/co2_mod.f  
+comode_mod.o                   : comode_mod.f                   CMN_SIZE define.h comode.h
+	$(F90) -c -r8 modified/comode_mod.f
+convection_mod.o               : convection_mod.f               CMN_DIAG CMN_SIZE define.h 
+	$(F90) -c -r8 modified/convection_mod.f 
+dao_mod.o                      : dao_mod.f                      CMN_GCTM CMN_SIZE define.h
+	$(F90) -c -r8 modified/dao_mod.f
+dust_mod.o                     : dust_mod.f                     CMN_DIAG CMN_GCTM CMN_SIZE define.h cmn_fj.h comode.h jv_cmn.h 
+	$(F90) -c -r8 modified/dust_mod.f
+geos_chem_mod.o                : geos_chem_mod.f                CMN_SIZE CMN_DIAG CMN_GCTM comode.h define.h define_adj.h
+	$(F90) -c -r8 modified/geos_chem_mod.f
+gamap_mod.o                    : gamap_mod.f                    CMN_DIAG CMN_SIZE define.h 
+	$(F90) -c     modified/gamap_mod.f     
+gasconc.o                      : gasconc.f                      CMN_SIZE define.h comode.h                
+	$(F90) -c -r8 modified/gasconc.f
+global_oh_mod.o                : global_oh_mod.f                CMN_SIZE define.h 
+	$(F90) -c -r8 modified/global_oh_mod.f
+global_ch4_mod.o               : global_ch4_mod.f               CMN CMN_DIAG CMN_SIZE define.h
+	$(F90) -c -r8 modified/global_ch4_mod.f
+grid_mod.o                     : grid_mod.f                     CMN_GCTM CMN_SIZE define.h 
+	$(F90) -c -r8 modified/grid_mod.f
+gwet_read_mod.o                : gwet_read_mod.f                CMN_DIAG CMN_SIZE define.h 
+	$(F90) -c -r8 modified/gwet_read_mod.f 
+i6_read_mod.o                  : i6_read_mod.f                  CMN_DIAG CMN_SIZE define.h 
+	$(F90) -c -r8 modified/i6_read_mod.f
+julday_mod.o                   : julday_mod.f                   
+	$(F90) -c -r8 modified/julday_mod.f
+input_mod.o                    : input_mod.f                    CMN CMN_DIAG CMN_O3 CMN_SIZE define.h
+	$(F90) -c -r8 modified/input_mod.f    
+lightning_nox_mod.o            : lightning_nox_mod.f            CMN_DIAG CMN_GCTM CMN_SIZE define.h define.h 
+	$(F90) -c -r8 modified/lightning_nox_mod.f
+megan_mod.o                    : megan_mod.f                    CMN_GCTM CMN_SIZE define.h
+	$(F90) -c -r8 modified/megan_mod.f    
+partition.o                    : partition.f                    CMN_SIZE define.h comode.h 
+	$(F90) -c -r8 modified/partition.f
+pbl_mix_mod.o                  : pbl_mix_mod.f                  CMN_DIAG CMN_GCTM CMN_SIZE define.h 
+	$(F90) -c -r8 modified/pbl_mix_mod.f
+photoj.o                       : photoj.f                       define_adj.h cmn_fj.h CMN_SIZE define.h jv_cmn.h 
+	$(F90) -c -r8 modified/photoj.f
+physproc.o                     : physproc.f                     CMN_SIZE define.h comode.h               
+	$(F90) -c -r8 modified/physproc.f
+pjc_pfix_geos5_window_mod.o    : pjc_pfix_geos5_window_mod.f    CMN CMN_GCTM CMN_SIZE define.h 
+	$(F90) -c     modified/pjc_pfix_geos5_window_mod.f
+pressure_mod.o                 : pressure_mod.f                 CMN_SIZE define.h
+	$(F90) -c -r8 modified/pressure_mod.f
+rpmares_mod.o                  : rpmares_mod.f                  CMN_SIZE define.h 
+	$(F90) -c -r8 modified/rpmares_mod.f
+restart_mod.o                  : restart_mod.f                  CMN_SIZE define.h               
+	$(F90) -c -r8 modified/restart_mod.f
+set_prof.o                     : set_prof.f                     define_adj.h cmn_fj.h CMN_SIZE define.h jv_cmn.h 
+	$(F90) -c -r8 modified/set_prof.f     
+setemis.o                      : setemis.f                      CMN_DIAG CMN_NOX CMN_SIZE define.h comode.h 
+	$(F90) -c -r8 modified/setemis.f     
+soilnoxems.o                   : soilnoxems.f                   CMN_DEP CMN_DIAG CMN_NOX CMN_SIZE define.h commsoil.h 
+	$(F90) -c -r8 modified/soilnoxems.f
+sulfate_mod.o                  : sulfate_mod.f                  CMN_DIAG CMN_GCTM CMN_O3 CMN_SIZE define.h cmn_fj.h CMN_SIZE define.h 
+	$(F90) -c -r8 modified/sulfate_mod.f
+tagged_co_mod.o                : tagged_co_mod.f                CMN_DIAG CMN_O3 CMN_SIZE define.h
+	$(F90) -c -r8 modified/tagged_co_mod.f
+tagged_ox_mod.o                : tagged_ox_mod.f                CMN_DIAG CMN_GCTM CMN_SIZE define.h 
+	$(F90) -c -r8 modified/tagged_ox_mod.f
+tpcore_geos5_window_mod.o      : tpcore_geos5_window_mod.f90    CMN_SIZE 
+	$(F90) -c -r8 modified/tpcore_geos5_window_mod.f90
+time_mod.o                     : time_mod.f                     define.h
+	$(F90) -c -r8 modified/time_mod.f
+tracer_mod.o                   : tracer_mod.f                   CMN_SIZE define.h
+	$(F90) -c -r8 modified/tracer_mod.f
+transport_mod.o                : transport_mod.f                CMN CMN_DIAG CMN_GCTM CMN_SIZE define.h 
+	$(F90) -c -r8 modified/transport_mod.f
+upbdflx_mod.o                  : upbdflx_mod.f                  CMN_GCTM CMN_SIZE define.h 
+	$(F90) -c -r8 modified/upbdflx_mod.f
+wetscav_mod.o                  : wetscav_mod.f                  CMN_DIAG CMN_SIZE define.h
+	$(F90) -c -r8 modified/wetscav_mod.f
+
+#====================
+# NEW DIRECTORY FILES
+#====================
+
+cgfam.o                        : cgfam.f
+	$(F90) -c -r8 new/cgfam.f
+cgsearch.o                     : cgsearch.f
+	$(F90) -c -r8 new/cgsearch.f
+linoz_mod.o                    : linoz_mod.f                    CMN CMN_DIAG CMN_O3 CMN_SIZE define.h linoz.com 
+	$(F90) -c -r8 new/linoz_mod.f
+routines.o                     : routines.f
+	$(F90) -c -r8 new/routines.f
+netcdf_util_mod.o              : netcdf_util_mod.f
+	$(F90_netCDF) -c -r8 $<
+strat_chem_mod.o               : strat_chem_mod.f               CMN_DIAG CMN_SIZE define.h comode.h
+	$(F90) -c -r8 new/strat_chem_mod.f
+
+#====================
+# SCIA CODE
+#====================
+ErrorModule.o        : ErrorModule.f90
+	$(F90) -c -r8 obs_operators/ErrorModule.f90
+sciabr_co_obs_mod.o  : sciabr_co_obs_mod.f CMN_SIZE
+	$(F90) -c -r8 obs_operators/sciabr_co_obs_mod.f
+
+#====================
+# TES CODE
+#====================
+#tes_nh3_mod.o        : tes_nh3_mod.f
+#	$(F90_netCDF) -c -r8 obs_operators/tes_nh3_mod.f
+tes_ch4_mod.o        : tes_ch4_mod.f
+	$(F90) -c -r8 $<
+
+#====================
+# Other CH4 obs operators
+#====================
+mem_ch4_mod.o        : mem_ch4_mod.f CMN_SIZE
+	$(F90) -c -r8 $<
+geocape_ch4_mod.o    : geocape_ch4_mod.f CMN_SIZE
+	$(F90) -c -r8 $<
+leo_ch4_mod.o        : leo_ch4_mod.f CMN_SIZE
+	$(F90) -c -r8 $<
+
+#====================
+# Other
+#====================
+improve_bc_mod.o     : improve_bc_mod.f                        CMN_SIZE
+	$(F90) -c -r8 obs_operators/improve_bc_mod.f
+population_mod.o     : population_mod.f CMN_SIZE
+	$(F90) -c -r8 obs_operators/population_mod.f
+
+#==============================================================================
+#  Other compilation commands
+#==============================================================================
+ifort_errmsg.o                 : ifort_errmsg.f     
+linux_err.o                    : linux_err.c     
+	$(CC) -c linux_err.c
+
+#=============================================================================
+#  Other Makefile Commands
+#=============================================================================
+clean:
+	rm -rf *.o *.mod ifc* geos rii_files
+
+.PHONY: clean doc docclean
+
+.SUFFIXES: .f .F .f90 .F90
+.f.o:			; $(F90) -c $*.f
+.F.o:			; $(F90) -c $*.F
+.f90.o:                 ; $(F90) -c -free $*.f90 
+.F90.o:                 ; $(F90) -c -free $*.F90 

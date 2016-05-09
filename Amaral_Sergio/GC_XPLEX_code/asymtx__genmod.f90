@@ -1,0 +1,18 @@
+        !COMPILER-GENERATED INTERFACE MODULE: Mon Mar 26 14:19:48 2012
+        MODULE ASYMTX__genmod
+          INTERFACE 
+            SUBROUTINE ASYMTX(AAD,M,IA,IEVEC,EVECD,EVALD,IER,WKD,MESSAGE&
+     &,BAD_STATUS)
+              TYPE (XPLEX), INTENT(INOUT) :: AAD(10,10)
+              INTEGER(KIND=4), INTENT(IN) :: M
+              INTEGER(KIND=4), INTENT(IN) :: IA
+              INTEGER(KIND=4), INTENT(IN) :: IEVEC
+              TYPE (XPLEX), INTENT(OUT) :: EVECD(10,10)
+              TYPE (XPLEX), INTENT(OUT) :: EVALD(10)
+              INTEGER(KIND=4), INTENT(OUT) :: IER
+              TYPE (XPLEX), INTENT(INOUT) :: WKD(20)
+              CHARACTER(*), INTENT(OUT) :: MESSAGE
+              LOGICAL(KIND=4), INTENT(OUT) :: BAD_STATUS
+            END SUBROUTINE ASYMTX
+          END INTERFACE 
+        END MODULE ASYMTX__genmod

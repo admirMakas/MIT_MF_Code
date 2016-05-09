@@ -1,0 +1,12 @@
+        !COMPILER-GENERATED INTERFACE MODULE: Mon Mar 26 14:19:48 2012
+        MODULE GFINDPAR__genmod
+          INTERFACE 
+            FUNCTION GFINDPAR(NUNIT,PREFIX,ERROR,PARNAME)
+              INTEGER(KIND=4) :: NUNIT
+              CHARACTER(*) :: PREFIX
+              LOGICAL(KIND=4) :: ERROR
+              CHARACTER(*) :: PARNAME
+              LOGICAL(KIND=4) :: GFINDPAR
+            END FUNCTION GFINDPAR
+          END INTERFACE 
+        END MODULE GFINDPAR__genmod

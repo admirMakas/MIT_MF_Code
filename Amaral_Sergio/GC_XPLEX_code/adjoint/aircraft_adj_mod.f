@@ -1,0 +1,458 @@
+      MODULE AIRCRAFT_ADJ_MOD
+!!
+!!******************************************************************************
+!  Module AIRCRAFT_ADJ_MOD is the adjoint code for  AIRCRAFT_MOD file. 
+!  Description of AIRCRAFT_MOD is as follows...
+!
+!!
+!!  Module AIRCRAFT_MOD is a replacement for AIRCRAFT_NOX_MOD to include the 
+!!  FAA's AEDT/SAGE aircraft emissions in GEOS-Chem. Species include NOx (with
+!!  NO/NO2 partitioning, SO2 (with an editable fuel sulfur content, input.geos),
+!!  SO4 (with an editable S(IV)->S(VI) conversion efficiency), BC based on FOA3
+!!  below 3000ft AGL and a constant EI above 3000ft AGL (editable), similarly
+!!  for OC emissions, and hydrocarbon emissions with speciation. 
+!!  Author:	Steven R.H. Barrett (Cambridge/MIT, 2009)
+!!  Sponsor:	FAA Office of Environment and Energy, ULS Project
+!!  Notes:
+!!  (1 ) LTO emissions are defined as <1000 m (not exaclty 3000 ft)
+!!  (2 ) If LAIRCRAFT in LOGICAL_MOD is off, nothing here gets used, i.e. 
+!!        LAIRCRAFT = LLTO_EMIS or LCRUISE_EMIS
+!!  (3 ) The module emits into SMVGEAR below the trop, and into STT above (as a
+!!        significant fraction of flight is above the trop)
+!!   (srhb, 8/6/2009)   
+!!
+!    
+!   Author:         Jamin Koo
+!   First created : 3/9/2010
+!   Last Modified : 6/1/2010
+!
+!   Using following module variables of AIRCRAFT_MOD
+!!  Module Variables:
+!!  ============================================================================
+!!  (1 ) LLTO_EMIS       (LOGICAL) : Switch for LTO emissions
+!!  (2 ) LCRUISE_EMIS    (LOGICAL) : Switch for cruise emissions
+!!  (3 ) CRUISE_FB_MULT  (TYPE (XPLEX) ) : Cruise fuel burn multiplier
+!!  (4 ) LTO_FB_MULT     (TYPE (XPLEX) ) : LTO fuel burn multiplier
+!!  (5 ) FSC				(TYPE (XPLEX) ) : Fuel sulfur content (ppm)
+!!  (6 ) EPSILON			(TYPE (XPLEX) ) : Fuel sulfur -> H2SO4 conversion (%)
+!!  (7 ) NOX_MULT		(TYPE (XPLEX) ) : NOx multiplier
+!!  (8 ) HC_MULT			(TYPE (XPLEX) ) : HC multiplier
+!!  (9 ) BC_MULT			(TYPE (XPLEX) ) : BC multiplier
+!!  (10) OC_MULT			(TYPE (XPLEX) ) : OC multiplier
+!!  (11) CO_MULT			(TYPE (XPLEX) ) : CO multiplier
+!!  (12) BGNH3_MULT		(TYPE (XPLEX) ) : Background ammonia multiplier
+!!  (13) NO2_NOX_CRUISE	(TYPE (XPLEX) ) : % of NOx as NO2 in cruise
+!!  (14) NO2_NOX_LTO		(TYPE (XPLEX) ) : % of NOx as NO2 in LTO (average)
+!!  (15) HONO_NOX		(TYPE (XPLEX) ) : % of NOx as HONO on NO2 mass basis
+!!  (16) EI_BC_CRUISE	(TYPE (XPLEX) ) : EI(BC) in g/kg-fuel for cruise
+!!  (17) EI_OC_CRUISE	(TYPE (XPLEX) ) : EI(OC) in g/kg-fuel for cruise
+!  Module Routines:
+!  ============================================================================
+!  (1 ) EMISS_AIRCRAFT_ADJ     : Adjoint routine of aircraft pollutants emission
+!  (2 ) INIT_AIRCRAFT_ADJ      : Routine to allocate/initialize module variables
+!  (3 ) CLEANUP_AIRCRAFT_ADJ   : Routine to deallocate module variables
+! 
+!  GEOS-CHEM modules referenced by aircraft_mod.f
+!  ============================================================================
+!  (1 ) bpch2_mod.f    : Module containing routines for binary punch file I/O
+!  (2 ) diag_mod.f     : Module containing GEOS-CHEM diagnostic arrays
+!  (3 ) error_mod.f    : Module containing NaN and other error check routines
+!  (4 ) file_mod.f     : Module containing file unit numbers and error checks
+!  (5 ) grid_mod.f     : Module containing horizontal grid information
+!  (6 ) pressure_mod.f : Module containing routines to compute P(I,J,L) 
+! 
+!  NOTES:
+!  (1 ) 
+!******************************************************************************
+!
+
+
+      USE AIRCRAFT_MOD
+
+      USE MYTYPE
+      USE COMPLEXIFY
+      IMPLICIT NONE
+
+      !=================================================================
+      ! MODULE PRIVATE DECLARATIONS -- keep certain internal variables 
+      ! and routines from being seen outside "aircraft_nox_mod.f"
+      !=================================================================
+
+
+      ! PRIVATE module variables
+      PRIVATE :: NAIR
+
+      !=================================================================
+      ! MODULE VARIABLES
+      !=================================================================
+               
+!          TYPE (XPLEX),  ALLOCATABLE :: EMIS_AC_NOx_ADJ(:,:,:) ! For SMVGEAR NOx
+          TYPE (XPLEX),  ALLOCATABLE :: EMS_AC_ADJ(:,:,:,:) ! For SMVGEAR NOx
+
+	  ! Map hour of day to time blocks
+	  
+      ! NAIR     - Maximum number for aircraft emissions in SAGE  
+	  INTEGER :: NAIR
+
+      !=================================================================
+      ! MODULE ROUTINES -- follow below the "CONTAINS" statement 
+      !=================================================================
+      CONTAINS
+
+
+      SUBROUTINE INIT_AIRCRAFT_ADJ
+!
+!******************************************************************************
+!  Subroutine INIT_AIRCRAFT allocates and initializes module variables.
+!  (srhb2, 8/6/09)
+!
+!  NOTES:
+!  (1 ) 
+!******************************************************************************
+!
+      ! References to F90 modules
+      USE ERROR_MOD, ONLY : ALLOC_ERR
+
+#     include "CMN_SIZE"
+  
+      ! Local variables
+      INTEGER :: AS
+
+      ! NAIR     - Maximum number for aircraft emissions in SAGE  
+#if   defined(GEOS_3) && defined(GRIDREDUCED)
+	  NAIR = 30
+#elif defined(GEOS_5) && defined(GRIDREDUCED)
+	  NAIR = 40
+#else
+#error "AEDT/SAGE aircraft emissions not preprocessed for this condition"
+#endif
+
+!      ALLOCATE( EMIS_AC_NOx_ADJ( IIPAR, JJPAR, NAIR ), STAT=AS )
+!      IF ( AS /= 0 ) CALL ALLOC_ERR( 'AIR' )
+!      EMIS_AC_NOx_ADJ = 0d0
+      ALLOCATE( EMS_AC_ADJ( IIPAR, JJPAR, LLPAR, 6 ), STAT=AS )
+      IF ( AS /= 0 ) CALL ALLOC_ERR( 'AIR' )
+      EMS_AC_ADJ = 0d0
+
+      ! Return to calling program
+      END SUBROUTINE INIT_AIRCRAFT_ADJ
+	  
+!------------------------------------------------------------------------------
+!
+      SUBROUTINE EMISS_AIRCRAFT_ADJ
+!
+!******************************************************************************
+!  Subroutine AIRCRAFT_EMISS emits aircraft pollution into SMVGEAR and STT. This
+!  is called from DO_EMISSIONS in EMISSIONS_MOD each emissions timestep.
+!   (srhb, 8/6/09)
+!
+!  NOTES: 
+!  (1 ) 
+!******************************************************************************
+
+      ! References to F90 modules
+      USE DAO_MOD,        ONLY : BXHEIGHT
+      USE DIAG_MOD,       ONLY : AD32_ac
+      USE GRID_MOD,       ONLY : GET_XOFFSET, GET_YOFFSET
+      USE TIME_MOD,       ONLY : GET_MONTH, GET_DAY
+      USE TIME_MOD,       ONLY : GET_TS_EMIS, GET_HOUR
+!      USE TRACER_MOD,     ONLY : STT
+      USE TRACERID_MOD
+      USE LOGICAL_MOD,    ONLY : LVARTROP
+      USE TROPOPAUSE_MOD, ONLY: GET_TPAUSE_LEVEL
+
+! (jk,3/11/10)
+
+      USE ADJ_ARRAYS_MOD, ONLY : STT_ADJ
+
+	  TYPE (XPLEX)             :: DTSRCE, TMPMULT
+	  
+	  INTEGER            :: I0, J0, I, J, L, TPL
+	    
+	  LOGICAL, SAVE      :: FIRST         = .TRUE.
+	  
+	  
+       INTEGER :: IDADJ_EAC_NOx=1
+       INTEGER :: IDADJ_EAC_HC=2
+       INTEGER :: IDADJ_EAC_PMNV=3
+       INTEGER :: IDADJ_EAC_PMFO=4
+       INTEGER ::  IDADJ_EAC_CO=5
+       INTEGER ::  IDADJ_EAC_SOx=6
+       CHARACTER(LEN=255) :: FILENAME
+
+#     include "CMN_SIZE"  ! Size parameters
+#     include "CMN"       ! PTOP, SIGE, AVP
+#     include "CMN_DIAG"  ! Diagnostic switches
+      
+      !=================================================================
+      ! AIREMISS begins here!
+      !=================================================================
+         WRITE( 6, '(a)' ) REPEAT( '=', 79 )
+         WRITE( 6, 100   )
+         WRITE( 6, 110   )
+         WRITE( 6, 120   )
+         WRITE( 6, '(a)' ) REPEAT( '=', 79 )
+
+ 100     FORMAT( 'A I R C R A F T   E M I S S I O N S - A D J O I N T' )
+ 110     FORMAT( 'Added by Jamin Koo'   ) 
+ 120     FORMAT( 'Last Modification Date: 3/17/10'       )
+
+	  ! If this is the first time, allocate arrays
+	  IF ( FIRST ) THEN
+	     FIRST = .FALSE.
+             CALL INIT_AIRCRAFT_ADJ
+	  END IF
+	  
+	  
+      ! Emissions timestep (emissions in kg/timestep)
+      DTSRCE  = GET_TS_EMIS() * 60d0
+	  
+      ! Do STT-only emissions
+
+!$OMP PARALLEL DO
+!$OMP+DEFAULT( SHARED )
+!$OMP+PRIVATE( L )  
+!$OMP+PRIVATE( TMPMULT )  
+       DO L = 1,NAIR
+	  TMPMULT = FSC/1000000.0d0 * EPSILON/100.0d0 
+     &                                  * 96.0d0/32.0d0 * DTSRCE
+!          PRINT *, "TMPMULT = ", TMPMULT
+!   Forward:
+!	  STT(:,:,L,IDTSO4) = STT(:,:,L,IDTSO4) 
+!     &            + AC_FB(:,:,L) * TMPMULT 
+!     &            * EMS_SF(:,:,1,IDADJ_EAC_SOx)
+!   Adjoint:
+          EMS_AC_ADJ(:,:,L,IDADJ_EAC_SOx) = 
+     &             EMS_AC_ADJ(:,:,L,IDADJ_EAC_SOx) 
+     &             +AC_FB(:,:,L)*TMPMULT*STT_ADJ(:,:,L,IDTSO4)
+!          PRINT *, 'AC_FB, TMPMULT, STT_ADJ',
+!     &         SUM(AC_FB), TMPMULT, SUM(STT_ADJ)
+
+
+!	  WRITE (*,*) 'Aircraft SO4= ',  
+!     & SUM(SUM(SUM(AC_FB(:,:,:) * TMPMULT/DTSRCE,3),2),1), ' kg/s'
+
+	  ! SO2
+	  TMPMULT = FSC/1000000.0d0 * (1.0d0-EPSILON/100.0d0)
+     &                          * 64.0d0/32.0d0 * DTSRCE
+!          PRINT *, "TMPMULT = ", TMPMULT
+!   Forward:
+!	  STT(:,:,L,IDTSO2) = STT(:,:,L,IDTSO2) 
+!     &            + AC_FB(:,:,L) * TMPMULT 
+!     &            * EMS_SF(:,:,1,IDADJ_EAC_SOx)
+!   Adjoint:
+          EMS_AC_ADJ(:,:,L,IDADJ_EAC_SOx) = 
+     &           EMS_AC_ADJ(:,:,L,IDADJ_EAC_SOx) 
+     &           + AC_FB(:,:,L)*TMPMULT*STT_ADJ(:,:,L,IDTSO2)
+
+
+!	  WRITE (*,*) 'Aircraft SO2= ',  
+!     & SUM(SUM(SUM(AC_FB(:,:,:) * TMPMULT/DTSRCE,3),2),1), ' kg/s'
+	 
+      ! BC and OC is assumed hydrophobic
+!   Forward:
+!      STT(:,:,L,IDTBCPI) = STT(:,:,L,IDTBCPI)
+!     &          + AC_PMNV(:,:,L) * DTSRCE 
+!     &          * EMS_SF(:,:,1,IDADJ_EAC_PMNV)
+!   Adjoint:  
+          EMS_AC_ADJ(:,:,L,IDADJ_EAC_PMNV) = 
+     &           EMS_AC_ADJ(:,:,L,IDADJ_EAC_PMNV) 
+     &           +  AC_PMNV(:,:,L)*DTSRCE *STT_ADJ(:,:,L,IDTBCPI)
+
+!   Forward:
+!	  STT(:,:,L,IDTOCPI) = STT(:,:,L,IDTOCPI)
+!     &          + AC_PMFO(:,:,L) * DTSRCE 
+!     &          * EMS_SF(:,:,1,IDADJ_EAC_PMFO)
+!   Adjoint:
+          EMS_AC_ADJ(:,:,L,IDADJ_EAC_PMFO) = 
+     &             EMS_AC_ADJ(:,:,L,IDADJ_EAC_PMFO) 
+     &         +   AC_PMFO(:,:,L)*DTSRCE*STT_ADJ(:,:,L,IDTOCPI)
+
+	  ! In future emit CO and HCs into SMVGEAR -- needs significant mods
+	  ! to SMVGEAR interfacing codes
+      ENDDO ! DO for L = 1,NAIR
+!$OMP END PARALLEL DO
+
+      ! NOx fix array
+!	  EMIS_AC_NOx_ADJ = 0d0
+
+!$OMP PARALLEL DO
+!$OMP+DEFAULT( SHARED )
+!$OMP+PRIVATE( I, J, L )  
+!$OMP+PRIVATE( TPL, TMPMULT )  
+      ! Loop over surface grid boxes
+      DO J = 1, JJPAR
+      DO I = 1, IIPAR
+
+         IF ( LVARTROP ) THEN 
+			      ! This is the highest trop box
+            TPL = GET_TPAUSE_LEVEL( I, J ) 
+         ELSE
+			      ! This is the highest trop box
+		    TPL = GET_TPAUSE_LEVEL( I, J ) - 1
+	 ENDIF
+		 
+	 DO L = 1, NAIR
+           IF ( L > TPL ) THEN
+!   Forward:
+!			   STT(I,J,L,IDTNOX) = STT(I,J,L,IDTNOX)
+!     &                         + AC_NOx(I,J,L) * DTSRCE 
+!     &                        * EMS_SF(I,J,1,IDADJ_EAC_NOx)
+!   Adjoint:
+	      EMS_AC_ADJ(I,J,L,IDADJ_EAC_NOx) = 
+     &              EMS_AC_ADJ(I,J,L,IDADJ_EAC_NOx)
+     &              + AC_NOx(I,J,L)*DTSRCE*STT_ADJ(I,J,L,IDTNOX)
+
+!	      EMIS_AC_NOx_ADJ(I,J,TPL) = 
+!     &                 EMIS_AC_NOx_ADJ(I,J,TPL)+AC_NOx(I,J,L)
+	   ELSE ! In trop
+!              EMIS_AC_NOx_ADJ(I,J,L)   = 
+!     &                        EMIS_AC_NOx_ADJ(I,J,L) + AC_NOx(I,J,L)
+	      EMS_AC_ADJ(I,J,L,IDADJ_EAC_NOx) = 
+     &              EMS_AC_ADJ(I,J,L,IDADJ_EAC_NOx)
+     &              + AC_NOx(I,J,L)*DTSRCE*STT_ADJ(I,J,L,IDTNOX)
+
+! Start HC emissions -- only in trop as otherwise buildup in strat messes up
+! ozone chemistry
+	     ! HCs MACR and RCHO don't have IDTs yet - put into STT for now
+!   Forward:
+	     TMPMULT = THC2TOG * ACF_MACR * DTSRCE
+!	     STT(I,J,L,IDTMACR) = STT(I,J,L,IDTMACR) 
+!     &                    + AC_HC(I,J,L) * TMPMULT 
+!     &                    * EMS_SF(I,J,1,IDADJ_EAC_HC)
+!   Adjoint: 
+             EMS_AC_ADJ(I,J,L,IDADJ_EAC_HC) = 
+     &               EMS_AC_ADJ(I,J,L,IDADJ_EAC_HC) 
+     &               + AC_HC(I,J,L)* TMPMULT * STT_ADJ(I,J,L,IDTMACR)
+
+	     TMPMULT = THC2TOG * ACF_RCHO * DTSRCE
+!   Forward:
+!	     STT(I,J,L,IDTRCHO) = STT(I,J,L,IDTRCHO) 
+!     &                    + AC_HC(I,J,L) * TMPMULT 
+!     &                     * EMS_SF(I,J,1,IDADJ_EAC_HC)
+!   Adjoint:
+             EMS_AC_ADJ(I,J,L,IDADJ_EAC_HC) = 
+     &                        EMS_AC_ADJ(I,J,L,IDADJ_EAC_HC) 
+     &              + AC_HC(I,J,L) * TMPMULT*STT_ADJ(I,J,L,IDTRCHO)
+
+		 ! STT CO emissions
+!   Forward:
+!	     STT(I,J,L,IDTCO) = STT(I,J,L,IDTCO)
+!     &                    + AC_CO(I,J,L) * DTSRCE 
+!     &                   * EMS_SF(I,J,1,IDADJ_EAC_CO)
+!   Adjoint:
+             EMS_AC_ADJ(I,J,L,IDADJ_EAC_CO) = 
+     &                   EMS_AC_ADJ(I,J,L,IDADJ_EAC_CO) 
+     &              + AC_CO(I,J,L)*DTSRCE * STT_ADJ(I,J,L,IDTCO)
+	 
+	     ! STT ACET emissions
+		 TMPMULT = THC2TOG * ACF_ACET * DTSRCE
+!   Foward:
+!	     STT(I,J,L,IDTACET) = STT(I,J,L,IDTACET)
+!     &                    + AC_HC(I,J,L) * TMPMULT 
+!     &                    * EMS_SF(I,J,1,IDADJ_EAC_HC)
+!   Adjoint:
+             EMS_AC_ADJ(I,J,L,IDADJ_EAC_HC) = 
+     &                    EMS_AC_ADJ(I,J,L,IDADJ_EAC_HC) 
+     &             + AC_HC(I,J,L) * TMPMULT*STT_ADJ(I,J,L,IDTACET)
+	 
+	     ! STT ALD2 emissions
+		 TMPMULT = THC2TOG * ACF_ALD2 * DTSRCE
+!   Forward:
+!	     STT(I,J,L,IDTALD2) = STT(I,J,L,IDTALD2)
+!     &                    + AC_HC(I,J,L) * TMPMULT 
+!     &                    * EMS_SF(I,J,1,IDADJ_EAC_HC)
+!   Adjoint: 
+             EMS_AC_ADJ(I,J,L,IDADJ_EAC_HC) = 
+     &                 EMS_AC_ADJ(I,J,L,IDADJ_EAC_HC) 
+     &          + AC_HC(I,J,L) * TMPMULT*STT_ADJ(I,J,L,IDTALD2)
+
+	     ! STT ALK4 emissions
+		 TMPMULT = THC2TOG * ACF_ALK4 * DTSRCE
+!   Forward:
+!	     STT(I,J,L,IDTALK4) = STT(I,J,L,IDTALK4)
+!     &                    + AC_HC(I,J,L) * TMPMULT
+!     &                    * EMS_SF(I,J,1,IDADJ_EAC_HC)
+!   Adjoint:
+             EMS_AC_ADJ(I,J,L,IDADJ_EAC_HC) = 
+     &             EMS_AC_ADJ(I,J,L,IDADJ_EAC_HC) 
+     &        + AC_HC(I,J,L) * TMPMULT * STT_ADJ(I,J,L,IDTALK4)
+	 
+	     ! STT C2H6 emissions
+		 TMPMULT = THC2TOG * ACF_C2H6 * DTSRCE
+!   Forward:
+!	     STT(I,J,L,IDTC2H6) = STT(I,J,L,IDTC2H6)
+!     &                    + AC_HC(I,J,L) * TMPMULT
+!     &                    * EMS_SF(I,J,1,IDADJ_EAC_HC)
+!   Adjoint:
+          EMS_AC_ADJ(I,J,L,IDADJ_EAC_HC) = 
+     &               EMS_AC_ADJ(I,J,L,IDADJ_EAC_HC) 
+     &               + AC_HC(I,J,L) * TMPMULT * STT_ADJ(I,J,L,IDTC2H6)
+	 	 
+		 ! STT C3H8 emissions
+		 TMPMULT = THC2TOG * ACF_C3H8 * DTSRCE
+!   Forward:
+!     STT(I,J,L,IDTC3H8) = STT(I,J,L,IDTC3H8)
+!    &                    + AC_HC(I,J,L) * TMPMULT
+!    &                    * EMS_SF(I,J,1,IDADJ_EAC_HC)
+!   Adjoint:
+          EMS_AC_ADJ(I,J,L,IDADJ_EAC_HC) = 
+     &                EMS_AC_ADJ(I,J,L,IDADJ_EAC_HC) 
+     &               + AC_HC(I,J,L) * TMPMULT * STT_ADJ(I,J,L,IDTC3H8)
+	 
+	     ! STT CH2O emissions
+		 TMPMULT = THC2TOG * ACF_CH2O * DTSRCE
+!   Forward:
+!     STT(I,J,L,IDTCH2O) = STT(I,J,L,IDTCH2O)
+!    &                    + AC_HC(I,J,L) * TMPMULT
+!    &                    * EMS_SF(I,J,1,IDADJ_EAC_HC)
+!   Adjoint:
+          EMS_AC_ADJ(I,J,L,IDADJ_EAC_HC) = 
+     &               EMS_AC_ADJ(I,J,L,IDADJ_EAC_HC)
+     &               + AC_HC(I,J,L) * TMPMULT * STT_ADJ(I,J,L,IDTCH2O)
+	 
+	     ! STT PRPE emissions
+		 TMPMULT = THC2TOG * ACF_PRPE * DTSRCE
+!   Forward:
+!     STT(I,J,L,IDTPRPE) = STT(I,J,L,IDTPRPE)
+!    &                    + AC_HC(I,J,L) * TMPMULT 
+!    &                    * EMS_SF(I,J,1,IDADJ_EAC_HC)
+!   Adjoint: 
+          EMS_AC_ADJ(I,J,L,IDADJ_EAC_HC) = 
+     &               EMS_AC_ADJ(I,J,L,IDADJ_EAC_HC) 
+     &               + AC_HC(I,J,L) * TMPMULT * STT_ADJ(I,J,L,IDTPRPE)
+
+! End HC emissions
+			   
+			END IF
+                END DO ! L=1,NAIR
+			 
+		 ! STT NOx emissions
+
+
+	  END DO ! I
+	  END DO ! J
+!$OMP END PARALLEL DO
+
+      ! Return to calling program
+      END SUBROUTINE EMISS_AIRCRAFT_ADJ
+!
+!!------------------------------------------------------------------------------
+!
+      SUBROUTINE CLEANUP_AIRCRAFT_ADJ
+!
+!******************************************************************************
+!  Subroutine CLEANUP_AIRCRAFT deallocates module variables. (srhb, 08/27/09)
+!
+!  NOTES:  
+!  (1 ) 
+!******************************************************************************
+!
+ 
+      ! Return to calling program
+      END SUBROUTINE CLEANUP_AIRCRAFT_ADJ
+
+!------------------------------------------------------------------------------
+
+      ! End of module
+      END MODULE AIRCRAFT_ADJ_MOD

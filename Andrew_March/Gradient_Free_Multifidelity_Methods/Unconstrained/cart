@@ -1,0 +1,15 @@
+# Andrew's Attempt to Run Cart
+echo "Script Running-local"
+rm -f finished.txt
+rm -f loadsCC.dat
+rm -f Components.i.triq
+rm -f results.dat
+scp Components.i.tri henry:~/airfoil/
+scp input.cntl henry:~/airfoil/
+ssh henry "./airfoil/callCPCart"
+scp henry:~/airfoil/results.dat .
+scp henry:~/airfoil/BEST/loadsCC.dat .
+scp henry:~/airfoil/BEST/temp.dat .
+scp henry:~/airfoil/BEST/Components.i.triq .
+mv temp.dat loadsCC.dat
+echo "I'm Done-maybe?"

@@ -1,0 +1,370 @@
+!$Id: LIDORT.PARS_F90,v 1.1 2010/08/01 18:26:37 daven Exp $
+! ===============================================================
+! =                                                             =
+! =                    THE LIDORT FAMILY                        =
+! =                                                             =
+! =          LInearized Discrete Ordinate Radiative Transfer)   =
+! =          --         -        -        -         -           =
+! =                                                             =
+! ===============================================================
+
+! ===============================================================
+! =                                                             =
+! =  Author :      Robert. J. D. Spurr                          =
+! =                                                             =
+! =  Address :      RT Solutions, inc.                          =
+! =            9 Channing Street                                =
+! =             Cambridge, MA 02138, USA                        =
+! =            Tel: (617) 492 1183                              =
+! =                                                             =
+! =  Email :      rtsolutions@verizon.net                       =
+! =                                                             =
+! =  This Version :   3.5 F90                                   =
+! =  Release Date :   June 2010                                 =
+! =                                                             =
+! =       NEW: THERMAL SUPPLEMENT INCLUDED    (3.2)             =
+! =       NEW: OUTGOING SPHERICITY CORRECTION (3.2)             =
+! =       NEW: TOTAL COLUMN JACOBIANS         (3.3)             =
+! =       VLIDORT COMPATIBILITY               (3.4)             =
+! =       THREADED/OPTIMIZED F90 code         (3.5)             =
+! =                                                             =
+! ===============================================================
+
+!    =====================================================
+!    =                                                   =
+!    =   This Version of  LIDORT comes with a GNU-style  =
+!    =   license. Please read the license carefully.     =
+!    =                                                   =
+!    =====================================================
+
+!  File name :  LIDORT.PARS_F90
+!  Purpose   :  Include File of constants for LIDORT model.
+
+!  Version number
+!  ==============
+
+      CHARACTER*3       LIDORT_VERSION_NUMBER
+      PARAMETER       ( LIDORT_VERSION_NUMBER = '3.5' )
+
+!  File i/o unit numbers
+!  ======================
+
+      INTEGER          LIDORT_FUNIT, LIDORT_INUNIT, LIDORT_SCENUNIT
+      INTEGER          LIDORT_RESUNIT, LIDORT_ERRUNIT, LIDORT_DBGUNIT
+      PARAMETER       ( LIDORT_INUNIT   = 21 )
+      PARAMETER       ( LIDORT_SCENUNIT = 22 )
+      PARAMETER       ( LIDORT_FUNIT    = 23 )
+      PARAMETER       ( LIDORT_RESUNIT  = 24 )
+      PARAMETER       ( LIDORT_ERRUNIT  = 25 )
+      PARAMETER       ( LIDORT_DBGUNIT  = 71 )
+
+!  Basic dimensions
+!  ================
+
+!  Computational dimensioning
+!  --------------------------
+
+!  Maximum number of computational threads
+
+      INTEGER         MAXTHREADS
+      ! increase to match JJPAR (dkh, 07/28/10) 
+      !PARAMETER       ( MAXTHREADS = 8 )
+      PARAMETER       ( MAXTHREADS = 46 )
+
+!  Number of computational streams in the half-space
+
+      INTEGER         MAXSTREAMS
+      PARAMETER       ( MAXSTREAMS = 10 )
+
+!  Maximum number of computational layers
+
+      INTEGER         MAXLAYERS
+      ! (dkh, 07/26/10) 
+      !PARAMETER       ( MAXLAYERS = 23 )
+      PARAMETER       ( MAXLAYERS = 47 )
+
+!  Maximum number of fine layers used in single scattering corrections
+
+      INTEGER         MAXFINELAYERS
+      PARAMETER       ( MAXFINELAYERS = 4 )
+
+!  Maximum number of input moments.
+!    (Use full range for exact single scatter calculations)
+
+      INTEGER         MAXMOMENTS_INPUT
+      PARAMETER       ( MAXMOMENTS_INPUT = 180 )
+
+!  Max number of thermal coefficients
+
+      INTEGER           MAX_THERMAL_COEFFS
+      PARAMETER       ( MAX_THERMAL_COEFFS = 3 )
+
+!  Geometrical and output parameters
+!  ---------------------------------
+
+!  Maximum number of solar beams
+
+      INTEGER         MAXBEAMS
+      PARAMETER       ( MAXBEAMS = 4 )
+
+!  maximum number of user-defined output zenith angles
+
+      INTEGER         MAX_USER_STREAMS
+      PARAMETER       ( MAX_USER_STREAMS = 4 )
+
+!  maximum number of user-defined output relative azimuth angles
+
+      INTEGER         MAX_USER_RELAZMS
+      PARAMETER       ( MAX_USER_RELAZMS = 3 )
+
+!  Maximum number of output levels
+
+      INTEGER         MAX_USER_LEVELS
+      PARAMETER       ( MAX_USER_LEVELS = 5 )
+
+!  Maximum number of output levels away from layer boundaries 
+!   This must be less than or equal to the previous entry
+
+      INTEGER         MAX_PARTLAYERS
+      PARAMETER       ( MAX_PARTLAYERS = 2 )
+
+!  Fixed parameters
+!  ----------------
+
+!  Two directions (Up and Down)
+
+      INTEGER         MAX_DIRECTIONS
+      PARAMETER       ( MAX_DIRECTIONS = 2 )
+
+!  Surface BRDF dimensioning
+!  -------------------------
+
+!  Maximum number of BRDF kernels
+
+      INTEGER         MAX_BRDF_KERNELS
+      PARAMETER       ( MAX_BRDF_KERNELS = 3 )
+
+!  Maximum number of BRDF parameters per kernel
+
+      INTEGER         MAX_BRDF_PARAMETERS
+      PARAMETER       ( MAX_BRDF_PARAMETERS = 3 )
+
+!  Maximum number of azimuth-quadrature streams for BGRDF Fourier.
+
+      INTEGER         MAXSTREAMS_BRDF, MAXSTHALF_BRDF
+!      PARAMETER       ( MAXSTREAMS_BRDF = 2 )
+      PARAMETER       ( MAXSTREAMS_BRDF = 101 )       ! best
+
+!  Weighting functions
+!  -------------------
+
+!  Maximum number of profile/column weighting functions
+
+      INTEGER          MAX_ATMOSWFS
+      PARAMETER        ( MAX_ATMOSWFS = 4 )
+
+!  Maximum number of surface property weighting functions
+
+      INTEGER          MAX_SURFACEWFS
+      PARAMETER        ( MAX_SURFACEWFS = 7 )
+
+!  Maximum number of error messages
+
+      INTEGER          MAX_MESSAGES
+      PARAMETER        ( MAX_MESSAGES = 25 )
+
+!  Derived dimensions
+!  ==================
+
+!  Maximum possible geometries
+
+      INTEGER         MAX_GEOMETRIES
+      INTEGER         TMP1
+      PARAMETER (TMP1=MAX_USER_RELAZMS*MAXBEAMS)
+      PARAMETER (MAX_GEOMETRIES=MAX_USER_STREAMS*TMP1)
+
+!  All streams
+
+      INTEGER         MAX_ALLSTRMS
+      PARAMETER       ( MAX_ALLSTRMS = MAX_USER_STREAMS + MAXSTREAMS )
+
+!  All streams for the Legendre PI-matrix setup.
+!   Straightline setting: This setting should avoid dimensioning error
+!      INTEGER         MAX_ALLSTRMS_P1
+!      PARAMETER       ( MAX_ALLSTRMS_P1 = MAX_ALLSTRMS + MAXBEAMS )
+
+!  All streams for the Legendre setup.
+!   This setting should avoid dimensioning error  Watch out for  Kill
+
+      INTEGER         MAX_ALLSTRMS_P1
+      PARAMETER (MAX_ALLSTRMS_P1=MAX_ALLSTRMS + MAXBEAMS*MAXLAYERS )
+
+!  Maximum number of moments in the diffuse field calculation
+!   This is always 2*MAXSTREAMS, in case we need DELTA-M
+
+      INTEGER         MAXMOMENTS
+      PARAMETER       ( MAXMOMENTS = 2*MAXSTREAMS )
+
+!  Maximum number of Fourier components = 2*MAXSTREAMS - 1
+
+      INTEGER         MAXFOURIER
+      PARAMETER       ( MAXFOURIER = 2*MAXSTREAMS - 1 )
+
+!  Half the number of BRDF azimuth quadratures
+
+      PARAMETER       ( MAXSTHALF_BRDF = MAXSTREAMS_BRDF / 2 )
+
+!  Other derived dimensions
+
+      INTEGER         MAXSTREAMS_2, MAXSTREAMS_P1
+      PARAMETER       ( MAXSTREAMS_2  = 2*MAXSTREAMS )
+      PARAMETER       ( MAXSTREAMS_P1 = MAXSTREAMS + 1 )
+
+!  For the BVP problems
+
+      INTEGER           MAXTOTAL, MAXBANDTOTAL
+      PARAMETER       ( MAXTOTAL = MAXLAYERS*MAXSTREAMS_2 )
+      PARAMETER       ( MAXBANDTOTAL = 9*MAXSTREAMS - 2 )
+
+!  Format constants
+!  ================
+
+      CHARACTER *(*)  FMT_HEADING
+      PARAMETER       ( FMT_HEADING =  '( / T6, ''-----> '', A, /)' )
+
+      CHARACTER *(*)  FMT_INTEGER
+      PARAMETER       ( FMT_INTEGER = '(T6, A, T58, I10)' )
+
+      CHARACTER *(*)  FMT_REAL
+      PARAMETER       ( FMT_REAL = '(T6, A, T58, 1PG14.6)' )
+
+      CHARACTER *(*)  FMT_CHAR
+      PARAMETER       ( FMT_CHAR = '(T6, A, T48, A20)' )
+
+      CHARACTER *(*)  FMT_SECTION
+      PARAMETER       ( FMT_SECTION =  '( / T6, ''-----> '', A, /)' )
+
+!  numbers
+!  =======
+
+      DOUBLE PRECISION FOUR,THREE,TWO,ONEP5,ONE,ZERO
+      DOUBLE PRECISION MINUS_ONE,MINUS_TWO
+      DOUBLE PRECISION HALF,QUARTER,DEG_TO_RAD,PIE,PI4,PI2,PIO2,PIO4
+      DOUBLE PRECISION EPS3, EPS4, EPS5
+      DOUBLE PRECISION SMALLNUM, BIGEXP
+
+      PARAMETER       ( ONE = 1.0D0, ZERO = 0.0D0,  ONEP5 = 1.5D0 )
+      PARAMETER       ( TWO = 2.0D0, THREE = 3.0D0, FOUR = 4.0D0 )
+      PARAMETER       ( QUARTER = 0.25D0, HALF = 0.5D0 )
+      PARAMETER       ( MINUS_ONE = -ONE )
+      PARAMETER       ( MINUS_TWO = -TWO )
+      PARAMETER       ( DEG_TO_RAD = 1.7453292519943D-02 )
+      PARAMETER       ( PIE = 180.0D0*DEG_TO_RAD )
+      PARAMETER       ( PI2 = 2.0D0 * PIE )
+      PARAMETER       ( PI4 = 4.0D0 * PIE )
+      PARAMETER       ( PIO2 = HALF * PIE )
+      PARAMETER       ( PIO4 = QUARTER * PIE )
+      PARAMETER       ( EPS3 = 0.001D0 )
+      PARAMETER       ( EPS4 = 0.0001D0 )
+      PARAMETER       ( EPS5 = 0.00001D0 )
+      PARAMETER       ( SMALLNUM = 1.0D-15 )
+      PARAMETER       ( BIGEXP = 32.0D0 )
+
+!  Control for Using L'Hopital's Rule
+
+      DOUBLE PRECISION HOPITAL_TOLERANCE
+      PARAMETER       ( HOPITAL_TOLERANCE = EPS5 )
+
+!  Control for limits of single scatter albedo
+
+      DOUBLE PRECISION OMEGA_SMALLNUM
+      PARAMETER       ( OMEGA_SMALLNUM = 1.0D-8 )
+
+!  Control for limits of extinction optical depth along solar path
+
+      DOUBLE PRECISION MAX_TAU_SPATH
+      PARAMETER       ( MAX_TAU_SPATH = 32.0D0 )
+
+!  Control for limits of extinction optical depth along USER paths
+
+      DOUBLE PRECISION MAX_TAU_UPATH
+      PARAMETER       ( MAX_TAU_UPATH = 32.0D0 )
+
+!  Control for limits of extinction optical depth along QUADRATURE paths
+
+      DOUBLE PRECISION MAX_TAU_QPATH
+      PARAMETER       ( MAX_TAU_QPATH = 32.0D0 )
+
+!  error indices
+!  =============
+
+      INTEGER           LIDORT_SERIOUS
+      PARAMETER       ( LIDORT_SERIOUS  = 4 )
+
+      INTEGER           LIDORT_WARNING
+      PARAMETER       ( LIDORT_WARNING  = 3 )
+
+      INTEGER           LIDORT_INFO
+      PARAMETER       ( LIDORT_INFO     = 2 )
+
+      INTEGER           LIDORT_DEBUG
+      PARAMETER       ( LIDORT_DEBUG    = 1 )
+
+      INTEGER           LIDORT_SUCCESS
+      PARAMETER       ( LIDORT_SUCCESS  = 0 )
+
+!  directional indices
+
+      INTEGER         UPIDX
+      PARAMETER       ( UPIDX  = 1 )
+
+      INTEGER         DNIDX
+      PARAMETER       ( DNIDX  = 2 )
+
+!  surface indices
+!  ---------------
+
+!  These refer to the BRDF kernel functions currently included.
+
+      INTEGER          LAMBERTIAN_IDX
+      INTEGER          ROSSTHIN_IDX
+      INTEGER          ROSSTHICK_IDX
+      INTEGER          LISPARSE_IDX
+      INTEGER          LIDENSE_IDX
+      INTEGER          HAPKE_IDX
+      INTEGER          ROUJEAN_IDX
+      INTEGER          RAHMAN_IDX
+      INTEGER          COXMUNK_IDX
+
+!  New for Version 3.4R
+
+      INTEGER          BREONVEG_IDX
+      INTEGER          BREONSOIL_IDX
+
+!  These never used up to and including Version 3.4
+
+!      INTEGER          GISSSOIL_IDX
+!      INTEGER          GISSSNOW_IDX
+
+      PARAMETER       ( LAMBERTIAN_IDX  = 1 )
+      PARAMETER       ( ROSSTHIN_IDX    = 2 )
+      PARAMETER       ( ROSSTHICK_IDX   = 3 )
+      PARAMETER       ( LISPARSE_IDX    = 4 )
+      PARAMETER       ( LIDENSE_IDX     = 5 )
+      PARAMETER       ( HAPKE_IDX       = 6 )
+      PARAMETER       ( ROUJEAN_IDX     = 7 )
+      PARAMETER       ( RAHMAN_IDX      = 8 )
+      PARAMETER       ( COXMUNK_IDX     = 9 )
+      PARAMETER       ( BREONVEG_IDX    = 10 )
+      PARAMETER       ( BREONSOIL_IDX   = 11 )
+
+!      PARAMETER       ( GISSSOIL_IDX    = 10 )
+!      PARAMETER       ( GISSSNOW_IDX    = 11 )
+
+      INTEGER          MAXBRDF_IDX
+      PARAMETER       ( MAXBRDF_IDX = BREONSOIL_IDX )
+
+!      PARAMETER       ( MAXBRDF_IDX = GISSSNOW_IDX )
+
+!  End of file.
+
