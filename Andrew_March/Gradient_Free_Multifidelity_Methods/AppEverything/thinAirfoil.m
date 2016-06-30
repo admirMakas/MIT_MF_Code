@@ -13,6 +13,7 @@
 %
 function [Cl,Cd]=thinAirfoil(M,alpha,x,camb)
 plotops=[0,0];
+
 angles=zeros(1,length(camb)-1);
 alpha=alpha*pi/180;
 x2=angles;
